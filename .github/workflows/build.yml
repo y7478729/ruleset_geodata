@@ -743,6 +743,7 @@ jobs:
       - name: Generate `clash` geodata-fakeip-user.yaml
         run: |
           cat <<EOF > ./clash-config/geodata-fakeip-user.yaml
+          ipv6: true
           mode: rule
           log-level: silent
           allow-lan: true
@@ -808,6 +809,7 @@ jobs:
       - name: Generate `clash` geodata-redirhost-user.yaml
         run: |
           cat <<EOF > ./clash-config/geodata-redirhost-user.yaml
+          ipv6: true
           mode: rule
           log-level: silent
           allow-lan: true
@@ -869,6 +871,7 @@ jobs:
       - name: Generate `clash` ruleset-fakeip-user.yaml
         run: |
           cat <<EOF > ./clash-config/ruleset-fakeip-user.yaml
+          ipv6: true
           mode: rule
           log-level: silent
           allow-lan: true
@@ -926,6 +929,7 @@ jobs:
       - name: Generate `clash` ruleset-redirhost-user.yaml
         run: |
           cat <<EOF > ./clash-config/ruleset-redirhost-user.yaml
+          ipv6: true
           mode: rule
           log-level: silent
           allow-lan: true
