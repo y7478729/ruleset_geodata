@@ -202,12 +202,12 @@ curl -o %APPDATA%\io.github.clash-verge-rev.clash-verge-rev\geoip.metadb -L http
 |noprocess|不含进程匹配模式，仅适合 ShellCrash|
 
 • `fake-ip-filter` 参数  
-`fake-ip-filter` 中添加[常用 fake-ip 地址过滤列表](https://github.com/juewuy/ShellCrash/blob/master/public/fake_ip_filter.list)，提高兼容性  
+`fake-ip-filter` 中添加[常用 fake-ip 地址过滤列表](https://github.com/juewuy/ShellCrash/blob/dev/public/fake_ip_filter.list)，提高兼容性  
 `fake-ip-filter` 中添加 [TrackersList](https://github.com/XIU2/TrackersListCollection/blob/master/all.txt)（udp 域名），防止 [BT 下载](https://github.com/c0re100/qBittorrent-Enhanced-Edition)无法连接 TrackersList UDP 协议  
 <img src="https://user-images.githubusercontent.com/45238096/224113233-4d76dec2-495c-4790-a00e-538fc1469639.png" width="60%"/>  
 `fake-ip-filter` 中添加 AdGuardHome 相关域名（包括：`adguardteam.github.io`、`adrules.top`、`anti-ad.net` 和 `static.adtidy.org`），防止作为下游时检查更新和下载“DNS 黑名单”失败  
 若想自己生成配置文件 user.yaml，可以 [Fork 本项目](https://github.com/DustinWin/ruleset_geodata/fork)后编辑 *.github/workflows/build.yml* 文件内的 ```name: Generate `clash` geodata-xxx-user.yaml``` 部分  
-若 DNS 模式选用的是 `redir-host`，必须进行 DNS 分流（可以参考 [mihomo 内核 DNS 分流教程](https://github.com/DustinWin/clash_singbox-tutorials/tree/main/%E6%95%99%E7%A8%8B%E5%90%88%E9%9B%86/Clash/%E8%BF%9B%E9%98%B6%E7%AF%87)），可以进入 *.github/workflows/build.yml* 文件，编辑 ```Generate `clash` geodata-redirhost-user.yaml``` 部分，将 `nameserver` 中的 `🪜 代理域名` 改成可以访问外网的策略组名称，或者直接将 `'https://dns.google/dns-query#🪜 代理域名'` 修改为 `'tls://dns.google'`  
+若 DNS 模式选用的是 `redir-host`，必须进行 DNS 分流（可以参考 [mihomo 内核 DNS 分流教程](https://github.com/DustinWin/clash_singbox-tutorials/tree/main/%E6%95%99%E7%A8%8B%E5%90%88%E9%9B%86/Clash/%E8%BF%9B%E9%98%B6%E7%AF%87)），可以进入 *.github/workflows/build.yml* 文件，编辑 ```Generate `clash` geodata-redirhost-user.yaml``` 部分，将 `nameserver` 中的 `🪜 代理域名` 改成可以访问外网的策略组名称，且**该策略组选中的机场节点不能支持 IPv6**（可全局代理后进入 [IPv6 测试](https://www.test-ipv6.com)网站来测试机场某节点是否支持 IPv6）  
 • 导入 Linux 端（以导入 ShellCrash 为例）  
 将下面命令中的 `{DNS 模式}` 替换为正在使用的 DNS 模式（`fakeip` 或 `redirhost`）  
 连接 SSH 后执行如下命令：
@@ -581,6 +581,7 @@ rules:
         "tag": "ads",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/ads.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/ads.srs",
         "download_detour": "DIRECT"
       },
@@ -588,6 +589,7 @@ rules:
         "tag": "applications",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/applications.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/applications.srs",
         "download_detour": "DIRECT"
       },
@@ -595,6 +597,7 @@ rules:
         "tag": "private",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/private.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/private.srs",
         "download_detour": "DIRECT"
       },
@@ -602,6 +605,7 @@ rules:
         "tag": "microsoft-cn",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/microsoft-cn.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/microsoft-cn.srs",
         "download_detour": "DIRECT"
       },
@@ -609,6 +613,7 @@ rules:
         "tag": "apple-cn",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/apple-cn.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/apple-cn.srs",
         "download_detour": "DIRECT"
       },
@@ -616,6 +621,7 @@ rules:
         "tag": "google-cn",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/google-cn.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/google-cn.srs",
         "download_detour": "DIRECT"
       },
@@ -623,6 +629,7 @@ rules:
         "tag": "games-cn",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/games-cn.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/games-cn.srs",
         "download_detour": "DIRECT"
       },
@@ -630,6 +637,7 @@ rules:
         "tag": "netflix",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/netflix.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/netflix.srs",
         "download_detour": "DIRECT"
       },
@@ -637,6 +645,7 @@ rules:
         "tag": "disney",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/disney.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/disney.srs",
         "download_detour": "DIRECT"
       },
@@ -644,6 +653,7 @@ rules:
         "tag": "max",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/max.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/max.srs",
         "download_detour": "DIRECT"
       },
@@ -651,6 +661,7 @@ rules:
         "tag": "primevideo",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/primevideo.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/primevideo.srs",
         "download_detour": "DIRECT"
       },
@@ -658,6 +669,7 @@ rules:
         "tag": "appletv",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/appletv.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/appletv.srs",
         "download_detour": "DIRECT"
       },
@@ -665,6 +677,7 @@ rules:
         "tag": "youtube",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/youtube.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/youtube.srs",
         "download_detour": "DIRECT"
       },
@@ -672,6 +685,7 @@ rules:
         "tag": "tiktok",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/tiktok.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/tiktok.srs",
         "download_detour": "DIRECT"
       },
@@ -679,6 +693,7 @@ rules:
         "tag": "bilibili",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/bilibili.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/bilibili.srs",
         "download_detour": "DIRECT"
       },
@@ -686,6 +701,7 @@ rules:
         "tag": "ai",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/ai.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/ai.srs",
         "download_detour": "DIRECT"
       },
@@ -693,6 +709,7 @@ rules:
         "tag": "networktest",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/networktest.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/networktest.srs",
         "download_detour": "DIRECT"
       },
@@ -700,6 +717,7 @@ rules:
         "tag": "proxy",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/proxy.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/proxy.srs",
         "download_detour": "DIRECT"
       },
@@ -707,6 +725,7 @@ rules:
         "tag": "cn",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/cn.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/cn.srs",
         "download_detour": "DIRECT"
       },
@@ -714,6 +733,7 @@ rules:
         "tag": "netflixip",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/netflixip.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/netflixip.srs",
         "download_detour": "DIRECT"
       },
@@ -721,6 +741,7 @@ rules:
         "tag": "telegramip",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/telegramip.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/telegramip.srs",
         "download_detour": "DIRECT"
       },
@@ -728,6 +749,7 @@ rules:
         "tag": "privateip",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/privateip.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/privateip.srs",
         "download_detour": "DIRECT"
       },
@@ -735,6 +757,7 @@ rules:
         "tag": "cnip",
         "type": "remote",
         "format": "binary",
+        "path": "./ruleset/cnip.srs",
         "url": "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/cnip.srs",
         "download_detour": "DIRECT"
       }
@@ -758,7 +781,7 @@ rules:
 <img src="https://user-images.githubusercontent.com/45238096/224113233-4d76dec2-495c-4790-a00e-538fc1469639.png" width="60%"/>  
 `fake-ip-filter` 中添加 AdGuardHome 相关域名，包括：`adguardteam.github.io`（AdGuardHome 自带 DNS 黑名单下载域名）、`adrules.top`（常用广告拦截下载域名）、`anti-ad.net`（常用广告拦截下载域名）和 `static.adtidy.org`（AdGuardHome 检查更新域名），防止作为下游时检查更新和下载“DNS 黑名单”失败  
 若想自己生成配置文件 user.yaml，可以 [Fork 本项目](https://github.com/DustinWin/ruleset_geodata/fork)后编辑 *.github/workflows/build.yml* 文件内的 ```name: Generate `clash` ruleset-xxx-user.yaml``` 部分  
-若 DNS 模式选用的是 `redir-host`，必须进行 DNS 分流（可以参考 [mihomo 内核 DNS 分流教程](https://github.com/DustinWin/clash_singbox-tutorials/tree/main/%E6%95%99%E7%A8%8B%E5%90%88%E9%9B%86/Clash/%E8%BF%9B%E9%98%B6%E7%AF%87)），可以进入 *.github/workflows/build.yml* 文件，编辑 ```Generate `clash` ruleset-redirhost-user.yaml``` 部分，将 `nameserver` 中的 `🪜 代理域名` 改成可以访问外网的策略组名称，或者直接将 `'https://dns.google/dns-query#🪜 代理域名'` 修改为 `'tls://dns.google'`  
+若 DNS 模式选用的是 `redir-host`，必须进行 DNS 分流（可以参考 [mihomo 内核 DNS 分流教程](https://github.com/DustinWin/clash_singbox-tutorials/tree/main/%E6%95%99%E7%A8%8B%E5%90%88%E9%9B%86/Clash/%E8%BF%9B%E9%98%B6%E7%AF%87)），可以进入 *.github/workflows/build.yml* 文件，编辑 ```Generate `clash` ruleset-redirhost-user.yaml``` 部分，将 `nameserver` 中的 `🪜 代理域名` 改成可以访问外网的策略组名称，且**该策略组选中的机场节点不能支持 IPv6**（可全局代理后进入 [IPv6 测试](https://www.test-ipv6.com)网站来测试机场某节点是否支持 IPv6）  
 • 导入 Linux 端（以导入 ShellCrash 为例）  
 将下面命令中的 `{DNS 模式}` 替换为正在使用的 DNS 模式（`fakeip` 或 `redirhost`）  
 连接 SSH 后执行如下命令：
