@@ -44,10 +44,10 @@ jobs:
           echo "proxy2=https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Global/Global.list" >> $GITHUB_ENV
           echo "cn1=https://raw.githubusercontent.com/Loyalsoldier/domain-list-custom/release/cn.txt" >> $GITHUB_ENV
           echo "cn2=https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMax/ChinaMax.list" >> $GITHUB_ENV
-          echo "netflixip=https://raw.githubusercontent.com/DustinWin/geoip/ips/netflix.txt" >> $GITHUB_ENV
-          echo "telegramip=https://raw.githubusercontent.com/DustinWin/geoip/ips/telegram.txt" >> $GITHUB_ENV
-          echo "privateip=https://raw.githubusercontent.com/DustinWin/geoip/ips/private.txt" >> $GITHUB_ENV
-          echo "cnip=https://raw.githubusercontent.com/DustinWin/geoip/ips/cn.txt" >> $GITHUB_ENV
+          echo "netflixip=https://raw.githubusercontent.com/y7478729/geoip/ips/netflix.txt" >> $GITHUB_ENV
+          echo "telegramip=https://raw.githubusercontent.com/y7478729/geoip/ips/telegram.txt" >> $GITHUB_ENV
+          echo "privateip=https://raw.githubusercontent.com/y7478729/geoip/ips/private.txt" >> $GITHUB_ENV
+          echo "cnip=https://raw.githubusercontent.com/y7478729/geoip/ips/cn.txt" >> $GITHUB_ENV
         shell: bash
 
       - name: Clone Repository
@@ -67,24 +67,24 @@ jobs:
           repository: cokebar/gfwlist2dnsmasq
           path: gfwlist2dnsmasq
 
-      - name: Checkout DustinWin/geoip
+      - name: Checkout y7478729/geoip
         uses: actions/checkout@v4
         with:
-          repository: DustinWin/geoip
+          repository: y7478729/geoip
           ref: ips
           path: geoip/ips
 
-      - name: Checkout DustinWin/geoip
+      - name: Checkout y7478729/geoip
         uses: actions/checkout@v4
         with:
-          repository: DustinWin/geoip
+          repository: y7478729/geoip
           ref: clash
           path: geoip/clash
 
-      - name: Checkout DustinWin/geoip
+      - name: Checkout y7478729/geoip
         uses: actions/checkout@v4
         with:
-          repository: DustinWin/geoip
+          repository: y7478729/geoip
           ref: sing-box
           path: geoip/sing-box
 
@@ -574,9 +574,9 @@ jobs:
           ./gfwlist2dnsmasq.sh -l -o ../tmp/temp-proxy3.txt
           sed 's/^/+\./' ../tmp/temp-proxy3.txt > ../tmp/temp-proxy4.txt
           curl -sSL ${proxy1} | grep 'domain:' | sed 's/:@\!cn$//' | sed 's/^domain:/+\./' >> ../tmp/temp-proxy4.txt
-          curl -sSL ${proxy1} | grep 'full:' | sed 's/:@\!cn$//' | sed "s/^full://"  >> ../tmp/temp-proxy4.txt
+          curl -sSL ${proxy1} | grep 'full:' | sed 's/:@\!cn$//' | sed "s/^full://" >> ../tmp/temp-proxy4.txt
           curl -sSL ${proxy2} | grep -Ev '#|DOMAIN-KEYWORD' | grep 'DOMAIN' | sed 's/^DOMAIN,//' | sed 's/^DOMAIN-SUFFIX,/+\./' >> ../tmp/temp-proxy4.txt
-          sed '/openai/d' ../tmp/temp-proxy4.txt > ../tmp/temp-proxy7.txt
+          sed  '/openai\.com/d; /auth0\.com/d; /\+\.bing\.com/d' ../tmp/temp-proxy4.txt > ../tmp/temp-proxy7.txt
           sort --ignore-case -u ../tmp/temp-proxy7.txt > ../clash-ruleset/proxy.list
           # Download sing-box rule_set
           ./gfwlist2dnsmasq.sh -l -o ../tmp/temp-proxy5.txt
@@ -761,9 +761,9 @@ jobs:
 
           geodata-mode: true
           geox-url:
-            geosite: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/geosite.dat"
-            geoip: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/geoip-lite.dat"
-            mmdb: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/Country-lite.mmdb"
+            geosite: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/geosite.dat"
+            geoip: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/geoip-lite.dat"
+            mmdb: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/Country-lite.mmdb"
           geo-auto-update: true
           geo-update-interval: 24
 
@@ -819,9 +819,9 @@ jobs:
 
           geodata-mode: true
           geox-url:
-            geosite: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/geosite.dat"
-            geoip: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/geoip-lite.dat"
-            mmdb: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash/Country-lite.mmdb"
+            geosite: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/geosite.dat"
+            geoip: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/geoip-lite.dat"
+            mmdb: "https://cdn.jsdelivr.net/gh/y7478729/ruleset_geodata@clash/Country-lite.mmdb"
           geo-auto-update: true
           geo-update-interval: 24
 
