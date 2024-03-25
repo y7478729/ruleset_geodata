@@ -576,7 +576,9 @@ jobs:
           curl -sSL ${proxy1} | grep 'domain:' | sed 's/:@\!cn$//' | sed 's/^domain:/+\./' >> ../tmp/temp-proxy4.txt
           curl -sSL ${proxy1} | grep 'full:' | sed 's/:@\!cn$//' | sed "s/^full://" >> ../tmp/temp-proxy4.txt
           curl -sSL ${proxy2} | grep -Ev '#|DOMAIN-KEYWORD' | grep 'DOMAIN' | sed 's/^DOMAIN,//' | sed 's/^DOMAIN-SUFFIX,/+\./' >> ../tmp/temp-proxy4.txt
-          sed  '/openai\.com/d; /auth0\.com/d; /\+\.bing\.com/d' ../tmp/temp-proxy4.txt > ../tmp/temp-proxy7.txt
+          # sed  '/openai\.com/d; /auth0\.com/d; /\+\.bing\.com/d' ../tmp/temp-proxy4.txt > ../tmp/temp-proxy7.txt
+          # sed '/\+\.\(auth0\.com\|bing\.com\|chatgpt\.com\|openai\.com\|live\.com\)$/!b;s///g' ../tmp/temp-proxy4.txt | sed '/^$/d' > ../tmp/temp-proxy7.txt
+          sed '/^\+\.\(auth0\.com\|bing\.com\|chatgpt\.com\|openai\.com\|live\.com\)$/!b;s///g' ../tmp/temp-proxy4.txt  | sed '/^$/d' > ../tmp/temp-proxy7.txt  
           sort --ignore-case -u ../tmp/temp-proxy7.txt > ../clash-ruleset/proxy.list
           # Download sing-box rule_set
           ./gfwlist2dnsmasq.sh -l -o ../tmp/temp-proxy5.txt
