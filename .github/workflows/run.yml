@@ -206,26 +206,6 @@ jobs:
           curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
         done
 
-    - name: Generate `mihomo` rule-set (mrs) and move .list files
-      run: |
-        curl -sS -o ./tools/mihomo -L https://github.com/DustinWin/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
-        chmod +x ./tools/mihomo
-
-        cd ./tools/
-        chmod +x ./mihomo
-        list=($(ls ./domains/))
-        for ((i = 0; i < ${#list[@]}; i++)); do
-          ./mihomo convert-ruleset domain text "./domains/${list[i]}/${list[i]}.list" ../mihomo-ruleset/${list[i]}.mrs
-          mv -f "./domains/${list[i]}/${list[i]}.list" ../mihomo-ruleset/
-        done
-
-        list=($(ls ./ips/))
-        for ((i = 0; i < ${#list[@]}; i++)); do
-          ./mihomo convert-ruleset ipcidr text "./ips/${list[i]}/${list[i]}.list" ../mihomo-ruleset/${list[i]}.mrs
-          mv -f "./ips/${list[i]}/${list[i]}.list" ../mihomo-ruleset/
-        done
-        rm -rf ./mihomo* ./domains/ ./ips/
-
     - name: Generate `loon` rule-set (.list) and move files
       run: |
         mkdir -p ./loon-ruleset/
@@ -266,6 +246,26 @@ jobs:
 
         rm -rf ./domains/
         rm -rf ./ips/
+
+    - name: Generate `mihomo` rule-set (mrs) and move .list files
+      run: |
+        curl -sS -o ./tools/mihomo -L https://github.com/DustinWin/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
+        chmod +x ./tools/mihomo
+
+        cd ./tools/
+        chmod +x ./mihomo
+        list=($(ls ./domains/))
+        for ((i = 0; i < ${#list[@]}; i++)); do
+          ./mihomo convert-ruleset domain text "./domains/${list[i]}/${list[i]}.list" ../mihomo-ruleset/${list[i]}.mrs
+          mv -f "./domains/${list[i]}/${list[i]}.list" ../mihomo-ruleset/
+        done
+
+        list=($(ls ./ips/))
+        for ((i = 0; i < ${#list[@]}; i++)); do
+          ./mihomo convert-ruleset ipcidr text "./ips/${list[i]}/${list[i]}.list" ../mihomo-ruleset/${list[i]}.mrs
+          mv -f "./ips/${list[i]}/${list[i]}.list" ../mihomo-ruleset/
+        done
+        rm -rf ./mihomo* ./domains/ ./ips/
 
     - name: Generate `sing-box` rule_set (srs) and move .json files
       run: |
