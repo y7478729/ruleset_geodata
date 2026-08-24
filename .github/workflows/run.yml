@@ -362,37 +362,109 @@ jobs:
       run: |
         mkdir -p ./loon-ruleset/
 
-        cd ./tools/loon/
+        cd ./tools/loon/ || exit 1
 
 
         # ==========================
         # Domain rules
         # ==========================
 
-        list=($(ls ./domains/))
+        echo "===== Generate loon domain rules ====="
 
-        for ((i = 0; i < ${#list[@]}; i++)); do
+        if [ -d "./domains/" ]; then
 
-          cp -f \
-          "./domains/${list[i]}/${list[i]}.list" \
-          "../../loon-ruleset/${list[i]}.list"
+          for dir in ./domains/*; do
 
-        done
+            [ -d "$dir" ] || continue
+
+            name=$(basename "$dir")
+
+            source="./domains/${name}/${name}.list"
+            target="../../loon-ruleset/${name}.list"
+
+
+            if [ -f "$source" ] && [ -s "$source" ]; then
+
+              cp -f "$source" "$target"
+
+              echo "Domain copied: ${name}.list"
+
+            else
+
+              echo "Skip missing domain rule: ${source}"
+
+            fi
+
+          done
+
+        else
+
+          echo "domains directory not found"
+
+        fi
+
 
 
         # ==========================
         # IP rules
         # ==========================
 
-        list=($(ls ./ips/))
+        echo "===== Generate loon IP rules ====="
 
-        for ((i = 0; i < ${#list[@]}; i++)); do
+        if [ -d "./ips/" ]; then
 
-          cp -f \
-          "./ips/${list[i]}/${list[i]}.list" \
-          "../../loon-ruleset/${list[i]}.list"
+          for dir in ./ips/*; do
 
-        done
+            [ -d "$dir" ] || continue
+
+            name=$(basename "$dir")
+
+            source="./ips/${name}/${name}.list"
+            target="../../loon-ruleset/${name}.list"
+
+
+            if [ -f "$source" ] && [ -s "$source" ]; then
+
+              cp -f "$source" "$target"
+
+              echo "IP copied: ${name}.list"
+
+            else
+
+              echo "Skip missing IP rule: ${source}"
+
+            fi
+
+          done
+
+        else
+
+          echo "ips directory not found"
+
+        fi
+
+
+
+        # ==========================
+        # Check result
+        # ==========================
+
+        echo "===== loon-ruleset output ====="
+
+        cd ../../loon-ruleset/ || exit 1
+
+        ls -lh
+
+
+        count=$(find . -type f -name "*.list" | wc -l)
+
+        if [ "$count" -eq 0 ]; then
+
+          echo "ERROR: loon-ruleset is empty"
+
+          exit 1
+
+        fi
 
     - name: Release and upload `mihomo-geodata` assets
       uses: svenstaro/upload-release-action@v2
