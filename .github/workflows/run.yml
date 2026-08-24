@@ -206,6 +206,116 @@ jobs:
           curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
         done
 
+    - name: Download `loon` rule-set files
+      run: |
+        mkdir -p ./tools/loon/domains/
+        mkdir -p ./tools/loon/ips/
+
+        domains=(
+          ads
+          trackerslist
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          netflix
+          disney
+          max
+          primevideo
+          appletv
+          youtube
+          tiktok
+          bilibili
+          spotify
+          media
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+          cn-lite
+          private
+        )
+
+        ips=(
+          privateip
+          cnip
+          telegramip
+          netflixip
+          mediaip
+        )
+
+
+        # ----------------------------------------------------------
+        # Domain rules
+        # ----------------------------------------------------------
+
+        for domain in "${domains[@]}"; do
+
+          curl -sSL \
+            "${domains_download_url}/${domain}.list" \
+            > "./tools/loon/domains/${domain}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # fakeip-filter
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/loon/domains/fakeip-filter/
+
+        curl -sSL \
+          "${domains_download_url}/fakeip-filter.list" \
+          > "./tools/loon/domains/fakeip-filter/fakeip-filter.list"
+
+
+        # ----------------------------------------------------------
+        # fakeip-filter-lite
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/loon/domains/fakeip-filter-lite/
+
+        curl -sSL \
+          "${domains_download_url}/fakeip-filter-lite.list" \
+          > "./tools/loon/domains/fakeip-filter-lite/fakeip-filter-lite.list"
+
+
+        # ----------------------------------------------------------
+        # applications
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/loon/domains/applications/
+
+        curl -sSL \
+          "${domains_download_url}/applications.list" \
+          > "./tools/loon/domains/applications/applications.list"
+
+
+        # ----------------------------------------------------------
+        # IP rules
+        # ----------------------------------------------------------
+
+        for ip in "${ips[@]}"; do
+
+          curl -sSL \
+            "${ips_download_url}/${ip}.list" \
+            > "./tools/loon/ips/${ip}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # Remove empty files
+        # ----------------------------------------------------------
+
+        find ./tools/loon \
+          -type f \
+          -empty \
+          -delete
+
     - name: Generate `mihomo` rule-set (mrs) and move .list files
       run: |
         curl -sS -o ./tools/mihomo -L https://github.com/DustinWin/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
@@ -225,6 +335,63 @@ jobs:
           mv -f "./ips/${list[i]}/${list[i]}.list" ../mihomo-ruleset/
         done
         rm -rf ./mihomo* ./domains/ ./ips/
+    - name: Generate `loon` rule-set and move .list files
+      run: |
+        mkdir -p ./loon_ruleset/
+
+
+        cd ./tools/
+
+
+        # ----------------------------------------------------------
+        # Domain rules
+        # ----------------------------------------------------------
+
+        list=($(ls ./loon/domains/))
+
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          name=${list[i]%.list}
+
+          cp -f \
+            "./loon/domains/${list[i]}" \
+            "../loon_ruleset/${name}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # IP rules
+        # ----------------------------------------------------------
+
+        list=($(ls ./loon/ips/))
+
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          name=${list[i]%.list}
+
+          cp -f \
+            "./loon/ips/${list[i]}" \
+            "../loon_ruleset/${name}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # Remove empty files
+        # ----------------------------------------------------------
+
+        find ../loon_ruleset \
+          -type f \
+          -empty \
+          -delete
+
+
+        # ----------------------------------------------------------
+        # Final cleanup
+        # ----------------------------------------------------------
+
+        rm -rf ./loon/
 
     - name: Generate `sing-box` rule_set (srs) and move .json files
       run: |
@@ -299,6 +466,19 @@ jobs:
         file_glob: true
         file: ./mihomo-geodata/*
 
+    - name: Release and upload `loon_ruleset` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: loon_ruleset
+        tag: loon_ruleset
+        overwrite: true
+        body: |
+          Loon 规则集文件
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./loon_ruleset/*
+
     - name: Commit and push `mihomo-geodata` branch
       run: |
         cd ./mihomo-geodata/ || exit 1
@@ -309,6 +489,30 @@ jobs:
         git add . && git commit -m "mihomo 内核 geodata 文件更新于 ${update_version}"
         git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
         git push -f origin mihomo-geodata
+
+    - name: Commit and push `loon_ruleset` branch
+      run: |
+        cd ./loon_ruleset/ || exit 1
+
+        git init
+
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
+
+        git config --local \
+          user.name "github-actions[bot]"
+
+        git checkout -b loon_ruleset
+
+        git add .
+
+        git commit \
+          -m "Loon 规则集文件更新于 ${update_version}"
+
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+
+        git push -f origin loon_ruleset
 
     - name: Release and upload `mihomo-ruleset` assets
       uses: svenstaro/upload-release-action@v2
@@ -406,17 +610,29 @@ jobs:
         for file in $(ls); do
           curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-geodata/${file}"
         done
+
+
         cd ../mihomo-ruleset/ || exit 1
         for file in $(ls); do
           curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-ruleset/${file}"
         done
+
+
         cd ../sing-box-ruleset-compatible/ || exit 1
         for file in $(ls); do
           curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset-compatible/${file}"
         done
+
+
         cd ../sing-box-ruleset/ || exit 1
         for file in $(ls); do
           curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset/${file}"
+        done
+
+
+        cd ../loon_ruleset/ || exit 1
+        for file in $(ls); do
+          curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@loon_ruleset/${file}"
         done
 
     - name: Delete old workflow runs
