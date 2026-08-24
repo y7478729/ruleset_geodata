@@ -206,32 +206,76 @@ jobs:
           curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
         done
 
-    - name: Generate `loon` rule-set (.list) and move files
+    - name: Download `loon` rule-set files
       run: |
-        mkdir -p ./loon-ruleset/
+        mkdir -p ./tools/loon/domains/
+        mkdir -p ./tools/loon/ips/
+        mkdir -p ./tools/loon/tmp/
 
-        cd ./tools/
+        domains=(
+          ads
+          trackerslist
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          netflix
+          disney
+          max
+          primevideo
+          appletv
+          youtube
+          tiktok
+          bilibili
+          spotify
+          media
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+          cn-lite
+        )
 
-        # ==========================
-        # Domain rules
-        # ==========================
+        ips=(
+          privateip
+          cnip
+          telegramip
+          netflixip
+          mediaip
+        )
 
-        list=($(ls ./domains/))
 
-        for ((i = 0; i < ${#list[@]}; i++)); do
-          cp -f "./domains/${list[i]}/${list[i]}.list" "../loon-ruleset/${list[i]}.list"
+        # Domain
+
+        for domain in "${domains[@]}"; do
+
+          mkdir -p "./tools/loon/domains/${domain}"
+
+          curl -sSL \
+          "${domains_download_url}/${domain}.list" \
+          | awk '/(DOMAIN,|DOMAIN-SUFFIX,)/' \
+          | sed \
+          -e 's/DOMAIN,//' \
+          -e 's/DOMAIN-SUFFIX,/\+\./' \
+          > "./tools/loon/domains/${domain}/${domain}.list"
 
         done
 
 
-        # ==========================
-        # IP rules
-        # ==========================
+        # IP
 
-        list=($(ls ./ips/))
+        for ip in "${ips[@]}"; do
 
-        for ((i = 0; i < ${#list[@]}; i++)); do
-          cp -f "./ips/${list[i]}/${list[i]}.list" "../loon-ruleset/${list[i]}.list"
+          mkdir -p "./tools/loon/ips/${ip}"
+
+          curl -sSL \
+          "${ips_download_url}/${ip}.list" \
+          | sed 's/.*,//' \
+          > "./tools/loon/ips/${ip}/${ip}.list"
+
         done
 
     - name: Generate `mihomo` rule-set (mrs) and move .list files
@@ -314,6 +358,42 @@ jobs:
           rm -rf ./sing-box* ./rules*
         fi
 
+    - name: Generate `loon` rule-set (.list) and move files
+      run: |
+        mkdir -p ./loon-ruleset/
+
+        cd ./tools/loon/
+
+
+        # ==========================
+        # Domain rules
+        # ==========================
+
+        list=($(ls ./domains/))
+
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          cp -f \
+          "./domains/${list[i]}/${list[i]}.list" \
+          "../../loon-ruleset/${list[i]}.list"
+
+        done
+
+
+        # ==========================
+        # IP rules
+        # ==========================
+
+        list=($(ls ./ips/))
+
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          cp -f \
+          "./ips/${list[i]}/${list[i]}.list" \
+          "../../loon-ruleset/${list[i]}.list"
+
+        done
+
     - name: Release and upload `mihomo-geodata` assets
       uses: svenstaro/upload-release-action@v2
       with:
@@ -350,49 +430,6 @@ jobs:
           规则集文件更新于 ${{ env.update_version }}
         file_glob: true
         file: ./mihomo-ruleset/*
-
-    - name: Release and upload `loon-ruleset` assets
-      uses: svenstaro/upload-release-action@v2
-
-      with:
-
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-
-        release_name: loon-ruleset
-
-        tag: loon-ruleset
-
-        overwrite: true
-
-        body: |
-          Loon 规则集文件
-          更新于 ${{ env.update_version }}
-
-        file_glob: true
-
-        file: ./loon-ruleset/*
-
-    - name: Commit and push `loon-ruleset` branch
-      run: |
-        
-        cd ./loon-ruleset/ || exit 1
-
-        git init
-
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-
-        git config --local user.name "github-actions[bot]"
-
-        git checkout -b loon-ruleset
-
-        git add .
-
-        git commit -m "loon ruleset 更新于 ${update_version}"
-
-        git remote add origin \
-        "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-
-        git push -f origin loon-ruleset
 
     - name: Commit and push `mihomo-ruleset` branch
       run: |
@@ -471,6 +508,62 @@ jobs:
         git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
         git push -f origin sing-box-ruleset
 
+    - name: Release and upload `loon-ruleset` assets
+      uses: svenstaro/upload-release-action@v2
+
+      with:
+
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+
+        release_name: loon-ruleset
+
+        tag: loon-ruleset
+
+        overwrite: true
+
+        body: |
+          Loon 规则集文件
+          更新于 ${{ env.update_version }}
+
+        file_glob: true
+
+        file: ./loon-ruleset/*
+
+    - name: Commit and push `loon-ruleset` branch
+      run: |
+        cd ./loon-ruleset/ || exit 1
+
+        # 检查规则文件是否存在
+        if [ -z "$(ls -A)" ]; then
+          echo "loon-ruleset 目录为空，终止提交"
+          exit 1
+        fi
+
+        git init
+
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+        # 强制创建/切换分支
+        git switch -C loon-ruleset
+
+        git add .
+
+        # 无变化时不提交
+        if git diff --cached --quiet; then
+          echo "loon-ruleset 无更新，跳过提交"
+          exit 0
+        fi
+
+        git commit -m "loon ruleset 更新于 ${update_version}"
+
+        git remote remove origin 2>/dev/null || true
+
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+
+        git push -f origin loon-ruleset
+
     - name: Purge jsDelivr CDN
       run: |
         cd ./mihomo-geodata/ || exit 1
@@ -505,3 +598,5 @@ jobs:
         repository: ${{ github.repository }}
         retain_days: 3
         keep_minimum_runs: 1
+
+Download `loon` rule-set files这个流程没有
