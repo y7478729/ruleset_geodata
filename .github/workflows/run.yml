@@ -39,9 +39,9 @@ jobs:
 
           echo "singbox_rules_compatible_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/{lines[++count]=$0} END{print lines[count-1]}' | sed -n 's/^* \([0-9]\+\):.*/\1/p')" >> ${GITHUB_ENV}
 
-          echo "domains_download_url=https://github.com/a7478729/domain-list-custom/releases/download/domains" >> ${GITHUB_ENV}
+          echo "domains_download_url=https://github.com/y7478729/domain-list-custom/releases/download/domains" >> ${GITHUB_ENV}
 
-          echo "ips_download_url=https://github.com/a7478729/geoip/releases/download/ips" >> ${GITHUB_ENV}
+          echo "ips_download_url=https://github.com/y7478729/geoip/releases/download/ips" >> ${GITHUB_ENV}
 
         shell: bash
 
@@ -58,10 +58,10 @@ jobs:
       # Checkout domain-list-custom
       # ============================================================
 
-      - name: Checkout `a7478729/domain-list-custom`
+      - name: Checkout `y7478729/domain-list-custom`
         uses: actions/checkout@v7
         with:
-          repository: a7478729/domain-list-custom
+          repository: y7478729/domain-list-custom
           path: custom
 
 
@@ -305,7 +305,7 @@ jobs:
           mkdir -p ./mihomo-geodata/
 
           mihomo_mmdb=(
-            $(curl -sSL https://api.github.com/repos/a7478729/geoip/releases \
+            $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
               | awk '/"browser_download_url"/' \
               | awk '/.mmdb/' \
               | awk -F '"' '{print $4}')
@@ -321,7 +321,7 @@ jobs:
 
 
           mihomo_others=(
-            $(curl -sSL https://api.github.com/repos/a7478729/geoip/releases \
+            $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
               | awk '/"browser_download_url"/' \
               | awk '/\/mihomo-geodata\//' \
               | awk '!/\.mmdb/' \
@@ -527,7 +527,7 @@ jobs:
         run: |
           curl -sS \
             -o ./tools/mihomo \
-            -L https://github.com/a7478729/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
+            -L https://github.com/y7478729/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
 
           chmod +x ./tools/mihomo
 
@@ -739,7 +739,7 @@ jobs:
 
             curl -sS \
               -o ./tools/sing-box \
-              -L https://github.com/a7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
+              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
 
             chmod +x ./tools/sing-box
 
@@ -773,7 +773,7 @@ jobs:
 
             curl -sS \
               -o ./tools/sing-box \
-              -L https://github.com/a7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
+              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
 
             chmod +x ./tools/sing-box
 
@@ -801,7 +801,7 @@ jobs:
 
             curl -sS \
               -o ./tools/sing-box \
-              -L https://github.com/a7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-testing-linux-amd64-v3.upx
+              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-testing-linux-amd64-v3.upx
 
             chmod +x ./tools/sing-box
 
