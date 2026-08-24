@@ -554,41 +554,6 @@ jobs:
         "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
         git push -f origin loon-ruleset
 
-    - name: Commit and push `loon-ruleset` branch
-      run: |
-        cd ./loon-ruleset/ || exit 1
-
-        # 检查规则文件是否存在
-        if [ -z "$(ls -A)" ]; then
-          echo "loon-ruleset 目录为空，终止提交"
-          exit 1
-        fi
-
-        git init
-
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-
-        # 强制创建/切换分支
-        git switch -C loon-ruleset
-
-        git add .
-
-        # 无变化时不提交
-        if git diff --cached --quiet; then
-          echo "loon-ruleset 无更新，跳过提交"
-          exit 0
-        fi
-
-        git commit -m "loon ruleset 更新于 ${update_version}"
-
-        git remote remove origin 2>/dev/null || true
-
-        git remote add origin \
-          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-
-        git push -f origin loon-ruleset
-
     - name: Purge jsDelivr CDN
       continue-on-error: true
       run: |
