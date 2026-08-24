@@ -598,5 +598,3 @@ jobs:
         repository: ${{ github.repository }}
         retain_days: 3
         keep_minimum_runs: 1
-
-Download `loon` rule-set files这个流程没有
