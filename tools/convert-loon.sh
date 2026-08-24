@@ -92,7 +92,8 @@ for FILE in "$INPUT_DIR/$TYPE"/*/*.list
 do
 [ -f "$FILE" ] || continue
 NAME=$(basename "$(dirname "$FILE")")
-POLICY="${!NAME}"
+CONF_NAME="${NAME//-/_}"
+POLICY="${!CONF_NAME}"
 if [ -z "$POLICY" ]; then
     echo "Skip $NAME (no policy)"
     continue
