@@ -587,109 +587,40 @@ jobs:
 
       - name: Download `sing-box` rule_set files
         run: |
-          domains=(
-            ads
-            private
-            trackerslist
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            games
-            netflix
-            disney
-            max
-            primevideo
-            appletv
-            youtube
-            tiktok
-            bilibili
-            spotify
-            media
-            ai
-            networktest
-            tld-proxy
-            gfw
-            proxy
-            cn
-            cn-lite
-          )
-
-          ips=(
-            privateip
-            cnip
-            telegramip
-            netflixip
-            mediaip
-          )
-
+          domains=(ads private trackerslist microsoft-cn apple-cn google-cn games-cn games netflix disney max primevideo appletv youtube tiktok bilibili spotify media ai networktest tld-proxy gfw proxy cn cn-lite)
+          ips=(privateip cnip telegramip netflixip mediaip)
 
           for domain in "${domains[@]}"; do
             mkdir -p "./tools/rules/${domain}/"
-
-            curl -sSL \
-              "${domains_download_url}/${domain}.list" \
-              > "./tools/rules/${domain}/${domain}.list"
+            curl -sSL "${domains_download_url}/${domain}.list" > "./tools/rules/${domain}/${domain}.list"
           done
-
-
           mkdir -p ./tools/rules/fakeip-filter/
-
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
-            > ./tmp/temp-fakeip-filter-rules.txt
-
+          curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-rules.txt
           cat <<EOF >> ./tmp/temp-fakeip-filter-rules.txt
           DOMAIN-KEYWORD,ntp
           DOMAIN-KEYWORD,stun
           DOMAIN-KEYWORD,time
           EOF
-
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' \
-            >> ./tmp/temp-fakeip-filter-rules.txt
-
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter-rules.txt \
-            > ./tools/rules/fakeip-filter/fakeip-filter.list
-
+          curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' >> ./tmp/temp-fakeip-filter-rules.txt
+          sort --ignore-case ./tmp/temp-fakeip-filter-rules.txt > ./tools/rules/fakeip-filter/fakeip-filter.list
 
           mkdir -p ./tools/rules/fakeip-filter-lite/
-
-          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
-            | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
-            > ./tmp/temp-fakeip-filter-lite-rules.txt
-
+          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-lite-rules.txt
           cat <<EOF >> ./tmp/temp-fakeip-filter-lite-rules.txt
           DOMAIN-KEYWORD,ntp
           DOMAIN-KEYWORD,stun
           DOMAIN-KEYWORD,time
           EOF
-
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter-lite-rules.txt \
-            > ./tools/rules/fakeip-filter-lite/fakeip-filter-lite.list
-
-
+          sort --ignore-case ./tmp/temp-fakeip-filter-lite-rules.txt > ./tools/rules/fakeip-filter-lite/fakeip-filter-lite.list
           rm -rf ./tmp*
 
-
           mkdir -p ./tools/rules/applications/
-
-          curl -sSL \
-            "${domains_download_url}/applications.list" \
-            > ./tools/rules/applications/applications.list
-
+          curl -sSL "${domains_download_url}/applications.list" > "./tools/rules/applications/applications.list"
 
           for ip in "${ips[@]}"; do
             mkdir -p "./tools/rules/${ip}/"
-
-            curl -sSL \
-              "${ips_download_url}/${ip}.list" \
-              > "./tools/rules/${ip}/${ip}.list"
+            curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
           done
-
-
       # ============================================================
       # Generate sing-box rule_set
       # ============================================================
