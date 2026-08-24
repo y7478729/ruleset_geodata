@@ -206,13 +206,19 @@ jobs:
           curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
         done
 
-    - name: Download `loon` rule-set files
+    - name: Download loon source rule files
       run: |
-        mkdir -p ./tools/loon/domains/
-        mkdir -p ./tools/loon/ips/
-        mkdir -p ./tools/loon/tmp/
 
-        domains=(
+        set -e
+
+        echo "===== Prepare loon source ====="
+
+        rm -rf ./tools/loon-ruleset
+        mkdir -p ./tools/loon/domains
+        mkdir -p ./tools/loon/ips
+
+
+        loon_domains=(
           ads
           trackerslist
           microsoft-cn
@@ -239,7 +245,8 @@ jobs:
           cn-lite
         )
 
-        ips=(
+
+        loon_ips=(
           privateip
           cnip
           telegramip
@@ -248,35 +255,39 @@ jobs:
         )
 
 
-        # Domain
+        echo "===== Download domains ====="
 
-        for domain in "${domains[@]}"; do
+        for domain in "${loon_domains[@]}"
+        do
 
           mkdir -p "./tools/loon/domains/${domain}"
 
-          curl -sSL \
+          curl \
+          -fsSL \
           "${domains_download_url}/${domain}.list" \
-          | awk '/(DOMAIN,|DOMAIN-SUFFIX,)/' \
-          | sed \
-          -e 's/DOMAIN,//' \
-          -e 's/DOMAIN-SUFFIX,/\+\./' \
-          > "./tools/loon/domains/${domain}/${domain}.list"
+          -o "./tools/loon/domains/${domain}/${domain}.list"
 
         done
 
 
-        # IP
 
-        for ip in "${ips[@]}"; do
+        echo "===== Download ips ====="
+
+        for ip in "${loon_ips[@]}"
+        do
 
           mkdir -p "./tools/loon/ips/${ip}"
 
-          curl -sSL \
+          curl \
+          -fsSL \
           "${ips_download_url}/${ip}.list" \
-          | sed 's/.*,//' \
-          > "./tools/loon/ips/${ip}/${ip}.list"
+          -o "./tools/loon/ips/${ip}/${ip}.list"
 
         done
+
+
+
+        echo "===== loon source download complete ====="
 
     - name: Generate `mihomo` rule-set (mrs) and move .list files
       run: |
@@ -358,113 +369,23 @@ jobs:
           rm -rf ./sing-box* ./rules*
         fi
 
-    - name: Generate `loon` rule-set (.list) and move files
+    - name: Generate loon rule-set
       run: |
-        mkdir -p ./loon-ruleset/
-
-        cd ./tools/loon/ || exit 1
-
-
-        # ==========================
-        # Domain rules
-        # ==========================
-
-        echo "===== Generate loon domain rules ====="
-
-        if [ -d "./domains/" ]; then
-
-          for dir in ./domains/*; do
-
-            [ -d "$dir" ] || continue
-
-            name=$(basename "$dir")
-
-            source="./domains/${name}/${name}.list"
-            target="../../loon-ruleset/${name}.list"
-
-
-            if [ -f "$source" ] && [ -s "$source" ]; then
-
-              cp -f "$source" "$target"
-
-              echo "Domain copied: ${name}.list"
-
-            else
-
-              echo "Skip missing domain rule: ${source}"
-
-            fi
-
-          done
-
-        else
-
-          echo "domains directory not found"
-
-        fi
-
-
-
-        # ==========================
-        # IP rules
-        # ==========================
-
-        echo "===== Generate loon IP rules ====="
-
-        if [ -d "./ips/" ]; then
-
-          for dir in ./ips/*; do
-
-            [ -d "$dir" ] || continue
-
-            name=$(basename "$dir")
-
-            source="./ips/${name}/${name}.list"
-            target="../../loon-ruleset/${name}.list"
-
-
-            if [ -f "$source" ] && [ -s "$source" ]; then
-
-              cp -f "$source" "$target"
-
-              echo "IP copied: ${name}.list"
-
-            else
-
-              echo "Skip missing IP rule: ${source}"
-
-            fi
-
-          done
-
-        else
-
-          echo "ips directory not found"
-
-        fi
-
-
-
-        # ==========================
-        # Check result
-        # ==========================
-
-        echo "===== loon-ruleset output ====="
-
-        cd ../../loon-ruleset/ || exit 1
-
-        ls -lh
-
-
-        count=$(find . -type f -name "*.list" | wc -l)
-
-        if [ "$count" -eq 0 ]; then
-
-          echo "ERROR: loon-ruleset is empty"
-
+        set -e
+        echo "===== Generate loon ruleset ====="
+        rm -rf ./loon-ruleset
+        mkdir -p ./loon-ruleset
+        chmod +x ./tools/convert-loon.sh
+        bash ./tools/convert-loon.sh
+        echo "===== Check loon ruleset ====="
+        count=$(find ./loon-ruleset -type f | wc -l)
+        if [ "$count" -eq 0 ]
+        then
+          echo "ERROR: loon-ruleset empty"
           exit 1
-
         fi
+        echo "Generated files:"
+        ls -lh ./loon-ruleset
 
     - name: Release and upload `mihomo-geodata` assets
       uses: svenstaro/upload-release-action@v2
@@ -593,13 +514,45 @@ jobs:
 
         overwrite: true
 
+
         body: |
+
           Loon 规则集文件
+
           更新于 ${{ env.update_version }}
+
 
         file_glob: true
 
         file: ./loon-ruleset/*
+
+    - name: Commit and push `loon-ruleset` branch
+      run: |
+        set -e
+        cd ./loon-ruleset || exit 1
+        if [ -z "$(ls -A)" ]
+        then
+          echo "loon-ruleset empty"
+          exit 1
+        fi
+        git init
+        git config user.email \
+        "github-actions[bot]@users.noreply.github.com"
+        git config user.name \
+        "github-actions[bot]"
+        git switch -C loon-ruleset
+        git add .
+        if git diff --cached --quiet
+        then
+          echo "loon ruleset no change"
+          exit 0
+        fi
+        git commit \
+        -m "loon ruleset 更新于 ${update_version}"
+        git remote remove origin 2>/dev/null || true
+        git remote add origin \
+        "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        git push -f origin loon-ruleset
 
     - name: Commit and push `loon-ruleset` branch
       run: |
