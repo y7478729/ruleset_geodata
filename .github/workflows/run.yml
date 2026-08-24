@@ -3,13 +3,13 @@ name: Build ruleset and geodata
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 19 * * *"
+  - cron: "0 19 * * *"
   push:
     branches:
-      - main
+    - main
     paths-ignore:
-      - "**/README.md"
-      - "**/*.ini"
+    - "**/README.md"
+    - "**/*.ini"
 
 permissions:
   contents: write
@@ -21,1315 +21,1312 @@ jobs:
 
     steps:
 
-      # ============================================================
-      # Set variables
-      # ============================================================
+    # ============================================================
+    # Set variables
+    # ============================================================
 
-      - name: Set variables
-        run: |
-          echo "update_version=$(date -d '+8 hours' +%Y-%m-%d)" >> ${GITHUB_ENV}
+    - name: Set variables
+      run: |
+        echo "update_version=$(date -d '+8 hours' +%Y-%m-%d)" >> ${GITHUB_ENV}
 
-          echo "singbox_core_release_version=$(curl -sSL https://api.github.com/repos/reF1nd/sing-box/tags?per_page=100 | jq -r '.[].name' | grep -P '^v?[0-9]+\.[0-9]+\.[0-9]+-reF1nd.*' | head -n 1 | awk -F'[v.-]' '{print $2"."$3".0"}')" >> ${GITHUB_ENV}
+        echo "singbox_core_release_version=$(curl -sSL https://api.github.com/repos/reF1nd/sing-box/tags?per_page=100 | jq -r '.[].name' | grep -P '^v?[0-9]+\.[0-9]+\.[0-9]+-reF1nd.*' | head -n 1 | awk -F'[v.-]' '{print $2"."$3".0"}')" >> ${GITHUB_ENV}
 
-          echo "singbox_core_latest_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/ {last=$0} END {print last}' | sed -n 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')" >> ${GITHUB_ENV}
+        echo "singbox_core_latest_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/ {last=$0} END {print last}' | sed -n 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')" >> ${GITHUB_ENV}
 
-          echo "singbox_core_compatible_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/{lines[++count]=$0} END{print lines[count-1]}' | sed -n 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')" >> ${GITHUB_ENV}
+        echo "singbox_core_compatible_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/{lines[++count]=$0} END{print lines[count-1]}' | sed -n 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')" >> ${GITHUB_ENV}
 
-          echo "singbox_rules_latest_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/ {last=$0} END {print last}' | sed -n 's/^* \([0-9]\+\):.*/\1/p')" >> ${GITHUB_ENV}
+        echo "singbox_rules_latest_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/ {last=$0} END {print last}' | sed -n 's/^* \([0-9]\+\):.*/\1/p')" >> ${GITHUB_ENV}
 
-          echo "singbox_rules_compatible_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/{lines[++count]=$0} END{print lines[count-1]}' | sed -n 's/^* \([0-9]\+\):.*/\1/p')" >> ${GITHUB_ENV}
+        echo "singbox_rules_compatible_version=$(curl -sSL https://raw.githubusercontent.com/reF1nd/sing-box/reF1nd-testing/docs/configuration/rule-set/source-format.md | awk '/\*/{lines[++count]=$0} END{print lines[count-1]}' | sed -n 's/^* \([0-9]\+\):.*/\1/p')" >> ${GITHUB_ENV}
 
-          echo "domains_download_url=https://github.com/y7478729/domain-list-custom/releases/download/domains" >> ${GITHUB_ENV}
+        echo "domains_download_url=https://github.com/y7478729/domain-list-custom/releases/download/domains" >> ${GITHUB_ENV}
 
-          echo "ips_download_url=https://github.com/y7478729/geoip/releases/download/ips" >> ${GITHUB_ENV}
+        echo "ips_download_url=https://github.com/y7478729/geoip/releases/download/ips" >> ${GITHUB_ENV}
 
-        shell: bash
+      shell: bash
 
+    # ============================================================
+    # Clone Repository
+    # ============================================================
 
-      # ============================================================
-      # Clone Repository
-      # ============================================================
+    - name: Clone Repository
+      uses: actions/checkout@v7
 
-      - name: Clone Repository
-        uses: actions/checkout@v7
+    # ============================================================
+    # Checkout domain-list-custom
+    # ============================================================
 
+    - name: Checkout `y7478729/domain-list-custom`
+      uses: actions/checkout@v7
+      with:
+        repository: y7478729/domain-list-custom
+        path: custom
 
-      # ============================================================
-      # Checkout domain-list-custom
-      # ============================================================
+    # ============================================================
+    # Checkout domain-list-community
+    # ============================================================
 
-      - name: Checkout `y7478729/domain-list-custom`
-        uses: actions/checkout@v7
-        with:
-          repository: y7478729/domain-list-custom
-          path: custom
+    - name: Checkout `v2fly/domain-list-community`
+      uses: actions/checkout@v7
+      with:
+        repository: v2fly/domain-list-community
+        path: community
 
+    # ============================================================
+    # Setup Go
+    # ============================================================
 
-      # ============================================================
-      # Checkout domain-list-community
-      # ============================================================
+    - name: Setup Go
+      uses: actions/setup-go@v7
+      with:
+        go-version-file: ./custom/go.mod
+        cache-dependency-path: ./custom/go.sum
 
-      - name: Checkout `v2fly/domain-list-community`
-        uses: actions/checkout@v7
-        with:
-          repository: v2fly/domain-list-community
-          path: community
+    # ============================================================
+    # Generate mihomo geodata
+    # ============================================================
 
+    - name: Generate `mihomo` geodata
+      run: |
+        mkdir -p ./tmp/ ./community/mydata/
 
-      # ============================================================
-      # Setup Go
-      # ============================================================
+        archs1=(
+          ads
+          private
+          trackerslist
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          netflix
+          disney
+          max
+          primevideo
+          appletv
+          youtube
+          tiktok
+          bilibili
+          spotify
+          media
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+        )
 
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: ./custom/go.mod
-          cache-dependency-path: ./custom/go.sum
+        archs2=(
+          ads
+          private
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+        )
 
-
-      # ============================================================
-      # Generate mihomo geodata
-      # ============================================================
-
-      - name: Generate `mihomo` geodata
-        run: |
-          mkdir -p ./tmp/ ./community/mydata/
-
-          archs1=(
-            ads
-            private
-            trackerslist
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            games
-            netflix
-            disney
-            max
-            primevideo
-            appletv
-            youtube
-            tiktok
-            bilibili
-            spotify
-            media
-            ai
-            networktest
-            tld-proxy
-            gfw
-            proxy
-            cn
-          )
-
-          archs2=(
-            ads
-            private
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            games
-            ai
-            networktest
-            tld-proxy
-            gfw
-            proxy
-            cn
-          )
-
-          archs3=(
-            private
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            gfw
-            cn-lite
-          )
+        archs3=(
+          private
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          gfw
+          cn-lite
+        )
 
 
-          # ----------------------------------------------------------
-          # fakeip-filter
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # fakeip-filter
+        # ----------------------------------------------------------
 
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
+        curl -sSL "${domains_download_url}/fakeip-filter.list" \
+          | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
+          | sed \
+            -e 's/DOMAIN,/full:/' \
+            -e 's/DOMAIN-SUFFIX,//' \
+          > ./tmp/temp-fakeip-filter.txt
+
+        cat <<EOF >> ./tmp/temp-fakeip-filter.txt
+        keyword:ntp
+        keyword:stun
+        keyword:time
+        EOF
+
+        curl -sSL "${domains_download_url}/fakeip-filter.list" \
+          | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' \
+          | sed 's/DOMAIN-REGEX,/regexp:/' \
+          >> ./tmp/temp-fakeip-filter.txt
+
+        sort --ignore-case \
+          ./tmp/temp-fakeip-filter.txt \
+          > ./tmp/fakeip-filter.txt
+
+
+        # ----------------------------------------------------------
+        # fakeip-filter-lite
+        # ----------------------------------------------------------
+
+        curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
+          | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
+          | sed \
+            -e 's/DOMAIN,/full:/' \
+            -e 's/DOMAIN-SUFFIX,//' \
+          > ./tmp/temp-fakeip-filter-lite.txt
+
+        cat <<EOF >> ./tmp/temp-fakeip-filter-lite.txt
+        keyword:ntp
+        keyword:stun
+        keyword:time
+        EOF
+
+        sort --ignore-case \
+          ./tmp/temp-fakeip-filter-lite.txt \
+          > ./tmp/fakeip-filter-lite.txt
+
+
+        # ----------------------------------------------------------
+        # geosite-all.dat
+        # ----------------------------------------------------------
+
+        cd ./community/
+
+        for arch1 in "${archs1[@]}"; do
+          curl -sSL "${domains_download_url}/${arch1}.list" \
             | sed \
               -e 's/DOMAIN,/full:/' \
               -e 's/DOMAIN-SUFFIX,//' \
-            > ./tmp/temp-fakeip-filter.txt
+              -e 's/DOMAIN-KEYWORD,/keyword:/' \
+              -e 's/DOMAIN-REGEX,/regexp:/' \
+            > "./mydata/${arch1}"
+        done
 
-          cat <<EOF >> ./tmp/temp-fakeip-filter.txt
-          keyword:ntp
-          keyword:stun
-          keyword:time
-          EOF
+        cp -f ../tmp/fakeip-filter.txt ./mydata/fakeip-filter
 
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' \
-            | sed 's/DOMAIN-REGEX,/regexp:/' \
-            >> ./tmp/temp-fakeip-filter.txt
-
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter.txt \
-            > ./tmp/fakeip-filter.txt
+        go run ./ \
+          --datapath=./mydata/ \
+          --outputname geosite-all.dat
 
 
-          # ----------------------------------------------------------
-          # fakeip-filter-lite
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # geosite-all-lite.dat
+        # ----------------------------------------------------------
 
-          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
-            | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' \
+        rm -f ./mydata/ads
+
+        cp -f ../tmp/fakeip-filter-lite.txt \
+          ./mydata/fakeip-filter
+
+        go run ./ \
+          --datapath=./mydata/ \
+          --outputname geosite-all-lite.dat
+
+
+        # ----------------------------------------------------------
+        # geosite.dat
+        # ----------------------------------------------------------
+
+        rm -f ./mydata/*
+
+        for arch2 in "${archs2[@]}"; do
+          curl -sSL "${domains_download_url}/${arch2}.list" \
             | sed \
               -e 's/DOMAIN,/full:/' \
               -e 's/DOMAIN-SUFFIX,//' \
-            > ./tmp/temp-fakeip-filter-lite.txt
+              -e 's/DOMAIN-KEYWORD,/keyword:/' \
+              -e 's/DOMAIN-REGEX,/regexp:/' \
+            > "./mydata/${arch2}"
+        done
 
-          cat <<EOF >> ./tmp/temp-fakeip-filter-lite.txt
-          keyword:ntp
-          keyword:stun
-          keyword:time
-          EOF
+        cp -f ../tmp/fakeip-filter.txt \
+          ./mydata/fakeip-filter
 
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter-lite.txt \
-            > ./tmp/fakeip-filter-lite.txt
-
-
-          # ----------------------------------------------------------
-          # geosite-all.dat
-          # ----------------------------------------------------------
-
-          cd ./community/
-
-          for arch1 in "${archs1[@]}"; do
-            curl -sSL "${domains_download_url}/${arch1}.list" \
-              | sed \
-                -e 's/DOMAIN,/full:/' \
-                -e 's/DOMAIN-SUFFIX,//' \
-                -e 's/DOMAIN-KEYWORD,/keyword:/' \
-                -e 's/DOMAIN-REGEX,/regexp:/' \
-              > "./mydata/${arch1}"
-          done
-
-          cp -f ../tmp/fakeip-filter.txt ./mydata/fakeip-filter
-
-          go run ./ \
-            --datapath=./mydata/ \
-            --outputname geosite-all.dat
+        go run ./ \
+          --datapath=./mydata/ \
+          --outputname geosite.dat
 
 
-          # ----------------------------------------------------------
-          # geosite-all-lite.dat
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # geosite-lite.dat
+        # ----------------------------------------------------------
 
-          rm -f ./mydata/ads
+        rm -f ./mydata/ads
 
-          cp -f ../tmp/fakeip-filter-lite.txt \
-            ./mydata/fakeip-filter
+        cp -f ../tmp/fakeip-filter-lite.txt \
+          ./mydata/fakeip-filter
 
-          go run ./ \
-            --datapath=./mydata/ \
-            --outputname geosite-all-lite.dat
-
-
-          # ----------------------------------------------------------
-          # geosite.dat
-          # ----------------------------------------------------------
-
-          rm -f ./mydata/*
-
-          for arch2 in "${archs2[@]}"; do
-            curl -sSL "${domains_download_url}/${arch2}.list" \
-              | sed \
-                -e 's/DOMAIN,/full:/' \
-                -e 's/DOMAIN-SUFFIX,//' \
-                -e 's/DOMAIN-KEYWORD,/keyword:/' \
-                -e 's/DOMAIN-REGEX,/regexp:/' \
-              > "./mydata/${arch2}"
-          done
-
-          cp -f ../tmp/fakeip-filter.txt \
-            ./mydata/fakeip-filter
-
-          go run ./ \
-            --datapath=./mydata/ \
-            --outputname geosite.dat
+        go run ./ \
+          --datapath=./mydata/ \
+          --outputname geosite-lite.dat
 
 
-          # ----------------------------------------------------------
-          # geosite-lite.dat
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # geosite-mini.dat
+        # ----------------------------------------------------------
 
-          rm -f ./mydata/ads
+        rm -f ./mydata/*
 
-          cp -f ../tmp/fakeip-filter-lite.txt \
-            ./mydata/fakeip-filter
-
-          go run ./ \
-            --datapath=./mydata/ \
-            --outputname geosite-lite.dat
-
-
-          # ----------------------------------------------------------
-          # geosite-mini.dat
-          # ----------------------------------------------------------
-
-          rm -f ./mydata/*
-
-          for arch3 in "${archs3[@]}"; do
-            curl -sSL "${domains_download_url}/${arch3}.list" \
-              | sed \
-                -e 's/DOMAIN,/full:/' \
-                -e 's/DOMAIN-SUFFIX,//' \
-                -e 's/DOMAIN-KEYWORD,/keyword:/' \
-                -e 's/DOMAIN-REGEX,/regexp:/' \
-              > "./mydata/${arch3}"
-          done
-
-          mv -f ./mydata/cn-lite ./mydata/cn
-
-          go run ./ \
-            --datapath=./mydata/ \
-            --outputname geosite-mini.dat
-
-
-      # ============================================================
-      # Get geoip relative files
-      # ============================================================
-
-      - name: Get geoip relative files
-        run: |
-          mkdir -p ./mihomo-geodata/
-
-          mihomo_mmdb=(
-            $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
-              | awk '/"browser_download_url"/' \
-              | awk '/.mmdb/' \
-              | awk -F '"' '{print $4}')
-          )
-
-          count_mihomo_mmdb=${#mihomo_mmdb[@]}
-
-          for ((i = 0; i < count_mihomo_mmdb; i++)); do
-            wget -q \
-              -P ./mihomo-geodata/ \
-              "${mihomo_mmdb[i]}"
-          done
-
-
-          mihomo_others=(
-            $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
-              | awk '/"browser_download_url"/' \
-              | awk '/\/mihomo-geodata\//' \
-              | awk '!/\.mmdb/' \
-              | awk -F '"' '{print $4}')
-          )
-
-          count_mihomo_others=${#mihomo_others[@]}
-
-          for ((i = 0; i < count_mihomo_others; i++)); do
-            wget -q \
-              -P ./community/ \
-              "${mihomo_others[i]}"
-          done
-
-
-      # ============================================================
-      # Move mihomo geodata files
-      # ============================================================
-
-      - name: Move `mihomo` geodata files
-        run: |
-          cd ./community/ || exit 1
-
-          for file in $(ls *.dat *.metadb); do
-            install -Dp \
-              "./${file}" \
-              ../mihomo-geodata/
-          done
-
-          rm -rf ../custom* ../community*
-
-
-      # ============================================================
-      # Download mihomo rule-set files
-      # ============================================================
-
-      - name: Download `mihomo` rule-set files
-        run: |
-          mkdir -p ./mihomo-ruleset/
-
-          domains=(
-            ads
-            trackerslist
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            games
-            netflix
-            disney
-            max
-            primevideo
-            appletv
-            youtube
-            tiktok
-            bilibili
-            spotify
-            media
-            ai
-            networktest
-            tld-proxy
-            gfw
-            proxy
-            cn
-            cn-lite
-          )
-
-          ips=(
-            privateip
-            cnip
-            telegramip
-            netflixip
-            mediaip
-          )
-
-
-          for domain in "${domains[@]}"; do
-            mkdir -p "./tools/domains/${domain}/"
-
-            curl -sSL \
-              "${domains_download_url}/${domain}.list" \
-              | awk '/(DOMAIN,|DOMAIN-SUFFIX,)/' \
-              | sed \
-                -e 's/DOMAIN,//' \
-                -e 's/DOMAIN-SUFFIX,/\+\./' \
-              >> "./tools/domains/${domain}/${domain}.list"
-          done
-
-
-          # ----------------------------------------------------------
-          # fakeip-filter
-          # ----------------------------------------------------------
-
-          mkdir -p ./tools/domains/fakeip-filter/
-
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '!/DOMAIN-REGEX,/' \
+        for arch3 in "${archs3[@]}"; do
+          curl -sSL "${domains_download_url}/${arch3}.list" \
             | sed \
-              -e 's/DOMAIN,//' \
-              -e 's/DOMAIN-SUFFIX,/\+\./' \
-            > ./tmp/temp-fakeip-filter-domains.txt
+              -e 's/DOMAIN,/full:/' \
+              -e 's/DOMAIN-SUFFIX,//' \
+              -e 's/DOMAIN-KEYWORD,/keyword:/' \
+              -e 's/DOMAIN-REGEX,/regexp:/' \
+            > "./mydata/${arch3}"
+        done
 
-          curl -sSL "${domains_download_url}/fakeip-filter.list" \
-            | awk '/DOMAIN-REGEX,/' \
-            | sed \
-              -e 's/\\s/ /' \
-              -e 's/\\./\./g' \
-              -e 's/\[\^.\]+/*/g' \
-              -e 's/\^\.\*/\^\+/' \
-              -e 's/.*\^//; s/\$//' \
-            >> ./tmp/temp-fakeip-filter-domains.txt
+        mv -f ./mydata/cn-lite ./mydata/cn
 
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter-domains.txt \
-            >> ./tools/domains/fakeip-filter/fakeip-filter.list
+        go run ./ \
+          --datapath=./mydata/ \
+          --outputname geosite-mini.dat
 
+    # ============================================================
+    # Get geoip relative files
+    # ============================================================
 
-          # ----------------------------------------------------------
-          # fakeip-filter-lite
-          # ----------------------------------------------------------
+    - name: Get geoip relative files
+      run: |
+        mkdir -p ./mihomo-geodata/
 
-          mkdir -p ./tools/domains/fakeip-filter-lite/
+        mihomo_mmdb=(
+          $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
+            | awk '/"browser_download_url"/' \
+            | awk '/.mmdb/' \
+            | awk -F '"' '{print $4}')
+        )
 
-          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
-            | awk '!/DOMAIN-REGEX,/' \
-            | sed \
-              -e 's/DOMAIN,//' \
-              -e 's/DOMAIN-SUFFIX,/\+\./' \
-            > ./tmp/temp-fakeip-filter-lite-domains.txt
+        count_mihomo_mmdb=${#mihomo_mmdb[@]}
 
-          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
-            | awk '/DOMAIN-REGEX,/' \
-            | sed \
-              -e 's/\\./\./g' \
-              -e 's/\[\^.\]+/*/g' \
-              -e 's/\^\.\*/\^\+/' \
-              -e 's/.*\^//; s/\$//' \
-            >> ./tmp/temp-fakeip-filter-lite-domains.txt
-
-          sort --ignore-case \
-            ./tmp/temp-fakeip-filter-lite-domains.txt \
-            >> ./tools/domains/fakeip-filter-lite/fakeip-filter-lite.list
+        for ((i = 0; i < count_mihomo_mmdb; i++)); do
+          wget -q \
+            -P ./mihomo-geodata/ \
+            "${mihomo_mmdb[i]}"
+        done
 
 
-          # ----------------------------------------------------------
-          # private
-          # ----------------------------------------------------------
+        mihomo_others=(
+          $(curl -sSL https://api.github.com/repos/y7478729/geoip/releases \
+            | awk '/"browser_download_url"/' \
+            | awk '/\/mihomo-geodata\//' \
+            | awk '!/\.mmdb/' \
+            | awk -F '"' '{print $4}')
+        )
 
-          mkdir -p ./tools/domains/private/
+        count_mihomo_others=${#mihomo_others[@]}
 
-          curl -sSL "${domains_download_url}/private.list" \
+        for ((i = 0; i < count_mihomo_others; i++)); do
+          wget -q \
+            -P ./community/ \
+            "${mihomo_others[i]}"
+        done
+
+    # ============================================================
+    # Move mihomo geodata files
+    # ============================================================
+
+    - name: Move `mihomo` geodata files
+      run: |
+        cd ./community/ || exit 1
+
+        for file in $(ls *.dat *.metadb); do
+          install -Dp \
+            "./${file}" \
+            ../mihomo-geodata/
+        done
+
+        rm -rf ../custom* ../community*
+
+    # ============================================================
+    # Download mihomo rule-set files
+    # ============================================================
+
+    - name: Download `mihomo` rule-set files
+      run: |
+        mkdir -p ./mihomo-ruleset/
+
+        domains=(
+          ads
+          trackerslist
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          netflix
+          disney
+          max
+          primevideo
+          appletv
+          youtube
+          tiktok
+          bilibili
+          spotify
+          media
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+          cn-lite
+        )
+
+        ips=(
+          privateip
+          cnip
+          telegramip
+          netflixip
+          mediaip
+        )
+
+
+        for domain in "${domains[@]}"; do
+          mkdir -p "./tools/domains/${domain}/"
+
+          curl -sSL \
+            "${domains_download_url}/${domain}.list" \
             | awk '/(DOMAIN,|DOMAIN-SUFFIX,)/' \
             | sed \
               -e 's/DOMAIN,//' \
               -e 's/DOMAIN-SUFFIX,/\+\./' \
-            > ./tmp/temp-private-domains.txt
-
-          curl -sSL "${domains_download_url}/private.list" \
-            | awk '/DOMAIN-REGEX,/' \
-            | sed \
-              -e 's/\\./\./g' \
-              -e 's/\[\^.\]+/*/g' \
-              -e 's/\^\.\*/\^\+/' \
-              -e 's/.*\^//; s/\$//' \
-            >> ./tmp/temp-private-domains.txt
-
-          sort --ignore-case \
-            ./tmp/temp-private-domains.txt \
-            >> ./tools/domains/private/private.list
+            >> "./tools/domains/${domain}/${domain}.list"
+        done
 
 
-          rm -f ./tmp/*
+        # ----------------------------------------------------------
+        # fakeip-filter
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/domains/fakeip-filter/
+
+        curl -sSL "${domains_download_url}/fakeip-filter.list" \
+          | awk '!/DOMAIN-REGEX,/' \
+          | sed \
+            -e 's/DOMAIN,//' \
+            -e 's/DOMAIN-SUFFIX,/\+\./' \
+          > ./tmp/temp-fakeip-filter-domains.txt
+
+        curl -sSL "${domains_download_url}/fakeip-filter.list" \
+          | awk '/DOMAIN-REGEX,/' \
+          | sed \
+            -e 's/\\s/ /' \
+            -e 's/\\./\./g' \
+            -e 's/\[\^.\]+/*/g' \
+            -e 's/\^\.\*/\^\+/' \
+            -e 's/.*\^//; s/\$//' \
+          >> ./tmp/temp-fakeip-filter-domains.txt
+
+        sort --ignore-case \
+          ./tmp/temp-fakeip-filter-domains.txt \
+          >> ./tools/domains/fakeip-filter/fakeip-filter.list
 
 
-          # ----------------------------------------------------------
-          # applications
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # fakeip-filter-lite
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/domains/fakeip-filter-lite/
+
+        curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
+          | awk '!/DOMAIN-REGEX,/' \
+          | sed \
+            -e 's/DOMAIN,//' \
+            -e 's/DOMAIN-SUFFIX,/\+\./' \
+          > ./tmp/temp-fakeip-filter-lite-domains.txt
+
+        curl -sSL "${domains_download_url}/fakeip-filter-lite.list" \
+          | awk '/DOMAIN-REGEX,/' \
+          | sed \
+            -e 's/\\./\./g' \
+            -e 's/\[\^.\]+/*/g' \
+            -e 's/\^\.\*/\^\+/' \
+            -e 's/.*\^//; s/\$//' \
+          >> ./tmp/temp-fakeip-filter-lite-domains.txt
+
+        sort --ignore-case \
+          ./tmp/temp-fakeip-filter-lite-domains.txt \
+          >> ./tools/domains/fakeip-filter-lite/fakeip-filter-lite.list
+
+
+        # ----------------------------------------------------------
+        # private
+        # ----------------------------------------------------------
+
+        mkdir -p ./tools/domains/private/
+
+        curl -sSL "${domains_download_url}/private.list" \
+          | awk '/(DOMAIN,|DOMAIN-SUFFIX,)/' \
+          | sed \
+            -e 's/DOMAIN,//' \
+            -e 's/DOMAIN-SUFFIX,/\+\./' \
+          > ./tmp/temp-private-domains.txt
+
+        curl -sSL "${domains_download_url}/private.list" \
+          | awk '/DOMAIN-REGEX,/' \
+          | sed \
+            -e 's/\\./\./g' \
+            -e 's/\[\^.\]+/*/g' \
+            -e 's/\^\.\*/\^\+/' \
+            -e 's/.*\^//; s/\$//' \
+          >> ./tmp/temp-private-domains.txt
+
+        sort --ignore-case \
+          ./tmp/temp-private-domains.txt \
+          >> ./tools/domains/private/private.list
+
+
+        rm -f ./tmp/*
+
+
+        # ----------------------------------------------------------
+        # applications
+        # ----------------------------------------------------------
+
+        curl -sSL \
+          "${domains_download_url}/applications.list" \
+          > ./mihomo-ruleset/applications.list
+
+
+        # ----------------------------------------------------------
+        # IP
+        # ----------------------------------------------------------
+
+        for ip in "${ips[@]}"; do
+          mkdir -p "./tools/ips/${ip}/"
 
           curl -sSL \
-            "${domains_download_url}/applications.list" \
-            > ./mihomo-ruleset/applications.list
+            "${ips_download_url}/${ip}.list" \
+            | sed 's/.*,//' \
+            >> "./tools/ips/${ip}/${ip}.list"
+        done
+
+    # ============================================================
+    # Generate mihomo rule-set (mrs) and move .list files
+    # ============================================================
+
+    - name: Generate `mihomo` rule-set (mrs) and move .list files
+      run: |
+        curl -sS \
+          -o ./tools/mihomo \
+          -L https://github.com/y7478729/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
+
+        chmod +x ./tools/mihomo
+
+        cd ./tools/
+
+        chmod +x ./mihomo
 
 
-          # ----------------------------------------------------------
-          # IP
-          # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # Domain rules
+        # ----------------------------------------------------------
 
-          for ip in "${ips[@]}"; do
-            mkdir -p "./tools/ips/${ip}/"
+        list=($(ls ./domains/))
 
-            curl -sSL \
-              "${ips_download_url}/${ip}.list" \
-              | sed 's/.*,//' \
-              >> "./tools/ips/${ip}/${ip}.list"
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          ./mihomo convert-ruleset \
+            domain \
+            text \
+            "./domains/${list[i]}/${list[i]}.list" \
+            "../mihomo-ruleset/${list[i]}.mrs"
+
+          mv -f \
+            "./domains/${list[i]}/${list[i]}.list" \
+            ../mihomo-ruleset/
+
+        done
+
+
+        # ----------------------------------------------------------
+        # IP rules
+        # ----------------------------------------------------------
+
+        list=($(ls ./ips/))
+
+        for ((i = 0; i < ${#list[@]}; i++)); do
+
+          ./mihomo convert-ruleset \
+            ipcidr \
+            text \
+            "./ips/${list[i]}/${list[i]}.list" \
+            "../mihomo-ruleset/${list[i]}.mrs"
+
+          mv -f \
+            "./ips/${list[i]}/${list[i]}.list" \
+            ../mihomo-ruleset/
+
+        done
+
+
+        rm -rf ./mihomo ./domains/ ./ips/
+
+    # ============================================================
+    # Download sing-box rule_set files
+    # ============================================================
+
+    - name: Download `sing-box` rule_set files
+      run: |
+        domains=(ads private trackerslist microsoft-cn apple-cn google-cn games-cn games netflix disney max primevideo appletv youtube tiktok bilibili spotify media ai networktest tld-proxy gfw proxy cn cn-lite)
+        ips=(privateip cnip telegramip netflixip mediaip)
+
+        for domain in "${domains[@]}"; do
+
+        mkdir -p "./tools/rules/${domain}/"
+
+        curl -sSL \
+           "${domains_download_url}/${domain}.list" \
+         | awk '
+           /^DOMAIN,/ {
+          print "{\"domain\":[\""substr($0,8)"\"]}"
+           }
+
+            /^DOMAIN-SUFFIX,/ {
+          print "{\"domain_suffix\":[\""substr($0,15)"\"]}"
+             }
+
+               /^DOMAIN-KEYWORD,/ {
+          print "{\"domain_keyword\":[\""substr($0,16)"\"]}"
+             }
+
+             /^DOMAIN-REGEX,/ {
+          print "{\"domain_regex\":[\""substr($0,14)"\"]}"
+               }
+           ' \
+        > "./tools/rules/${domain}/${domain}.json"
+
           done
+        mkdir -p ./tools/rules/fakeip-filter/
+        curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-rules.txt
+        cat <<EOF >> ./tmp/temp-fakeip-filter-rules.txt
+        DOMAIN-KEYWORD,ntp
+        DOMAIN-KEYWORD,stun
+        DOMAIN-KEYWORD,time
+        EOF
+        curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' >> ./tmp/temp-fakeip-filter-rules.txt
+        sort --ignore-case ./tmp/temp-fakeip-filter-rules.txt > ./tools/rules/fakeip-filter/fakeip-filter.list
+
+        mkdir -p ./tools/rules/fakeip-filter-lite/
+        curl -sSL "${domains_download_url}/fakeip-filter-lite.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-lite-rules.txt
+        cat <<EOF >> ./tmp/temp-fakeip-filter-lite-rules.txt
+        DOMAIN-KEYWORD,ntp
+        DOMAIN-KEYWORD,stun
+        DOMAIN-KEYWORD,time
+        EOF
+        sort --ignore-case ./tmp/temp-fakeip-filter-lite-rules.txt > ./tools/rules/fakeip-filter-lite/fakeip-filter-lite.list
+        rm -rf ./tmp*
+
+        mkdir -p ./tools/rules/applications/
+        curl -sSL "${domains_download_url}/applications.list" > "./tools/rules/applications/applications.list"
+
+        for ip in "${ips[@]}"; do
+          mkdir -p "./tools/rules/${ip}/"
+          curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
+        done
+    # ============================================================
+    # Generate sing-box rule_set
+    # ============================================================
+
+    - name: Generate `sing-box` rule_set (srs) and move .json files
+      run: |
+        
+        if [[ "${{ env.singbox_core_latest_version }}" == "${{ env.singbox_core_release_version }}" ]]; then
+
+          echo "singbox_core_old_version=${{ env.singbox_core_compatible_version }}" >> $GITHUB_ENV
+          echo "singbox_core_new_version=${{ env.singbox_core_latest_version }}" >> $GITHUB_ENV
+          echo "singbox_ruleset_old_version=${{ env.singbox_rules_compatible_version }}" >> $GITHUB_ENV
+          echo "singbox_ruleset_new_version=${{ env.singbox_rules_latest_version }}" >> $GITHUB_ENV
+          echo "singbox_equal=true" >> $GITHUB_ENV
 
 
-      # ============================================================
-      # Generate mihomo rule-set (mrs) and move .list files
-      # ============================================================
+          curl -sS -L \
+            "https://github.com/SagerNet/sing-box/releases/download/v${{ env.singbox_core_compatible_version }}/sing-box-${{ env.singbox_core_compatible_version }}-linux-amd64.tar.gz" \
+            | tar -zx -C ./tools/
 
-      - name: Generate `mihomo` rule-set (mrs) and move .list files
-        run: |
-          curl -sS \
-            -o ./tools/mihomo \
-            -L https://github.com/y7478729/proxy-tools/releases/download/mihomo/mihomo-meta-linux-amd64-v3.upx
+          mv -f \
+            "./tools/sing-box-${{ env.singbox_core_compatible_version }}-linux-amd64/sing-box" \
+            ./tools/sing-box
 
-          chmod +x ./tools/mihomo
+
+          mkdir -p ./sing-box-ruleset-compatible/
 
           cd ./tools/
 
-          chmod +x ./mihomo
-
-
-          # ----------------------------------------------------------
-          # Domain rules
-          # ----------------------------------------------------------
-
-          list=($(ls ./domains/))
-
-          for ((i = 0; i < ${#list[@]}; i++)); do
-
-            ./mihomo convert-ruleset \
-              domain \
-              text \
-              "./domains/${list[i]}/${list[i]}.list" \
-              "../mihomo-ruleset/${list[i]}.mrs"
-
-            mv -f \
-              "./domains/${list[i]}/${list[i]}.list" \
-              ../mihomo-ruleset/
-
-          done
-
-
-          # ----------------------------------------------------------
-          # IP rules
-          # ----------------------------------------------------------
-
-          list=($(ls ./ips/))
-
-          for ((i = 0; i < ${#list[@]}; i++)); do
-
-            ./mihomo convert-ruleset \
-              ipcidr \
-              text \
-              "./ips/${list[i]}/${list[i]}.list" \
-              "../mihomo-ruleset/${list[i]}.mrs"
-
-            mv -f \
-              "./ips/${list[i]}/${list[i]}.list" \
-              ../mihomo-ruleset/
-
-          done
-
-
-          rm -rf ./mihomo ./domains/ ./ips/
-
-
-      # ============================================================
-      # Download sing-box rule_set files
-      # ============================================================
-
-      - name: Download `sing-box` rule_set files
-        run: |
-          domains=(ads private trackerslist microsoft-cn apple-cn google-cn games-cn games netflix disney max primevideo appletv youtube tiktok bilibili spotify media ai networktest tld-proxy gfw proxy cn cn-lite)
-          ips=(privateip cnip telegramip netflixip mediaip)
-
-          for domain in "${domains[@]}"; do
-            mkdir -p "./tools/rules/${domain}/"
-            curl -sSL "${domains_download_url}/${domain}.list" > "./tools/rules/${domain}/${domain}.list"
-          done
-          mkdir -p ./tools/rules/fakeip-filter/
-          curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-rules.txt
-          cat <<EOF >> ./tmp/temp-fakeip-filter-rules.txt
-          DOMAIN-KEYWORD,ntp
-          DOMAIN-KEYWORD,stun
-          DOMAIN-KEYWORD,time
-          EOF
-          curl -sSL "${domains_download_url}/fakeip-filter.list" | awk '/DOMAIN-REGEX,/ && !/(ntp|stun|time)/' >> ./tmp/temp-fakeip-filter-rules.txt
-          sort --ignore-case ./tmp/temp-fakeip-filter-rules.txt > ./tools/rules/fakeip-filter/fakeip-filter.list
-
-          mkdir -p ./tools/rules/fakeip-filter-lite/
-          curl -sSL "${domains_download_url}/fakeip-filter-lite.list" | awk '!/(DOMAIN-REGEX,|ntp|stun|time)/' > ./tmp/temp-fakeip-filter-lite-rules.txt
-          cat <<EOF >> ./tmp/temp-fakeip-filter-lite-rules.txt
-          DOMAIN-KEYWORD,ntp
-          DOMAIN-KEYWORD,stun
-          DOMAIN-KEYWORD,time
-          EOF
-          sort --ignore-case ./tmp/temp-fakeip-filter-lite-rules.txt > ./tools/rules/fakeip-filter-lite/fakeip-filter-lite.list
-          rm -rf ./tmp*
-
-          mkdir -p ./tools/rules/applications/
-          curl -sSL "${domains_download_url}/applications.list" > "./tools/rules/applications/applications.list"
-
-          for ip in "${ips[@]}"; do
-            mkdir -p "./tools/rules/${ip}/"
-            curl -sSL "${ips_download_url}/${ip}.list" > "./tools/rules/${ip}/${ip}.list"
-          done
-      # ============================================================
-      # Generate sing-box rule_set
-      # ============================================================
-
-      - name: Generate `sing-box` rule_set (srs) and move .json files
-        run: |
-
-          if [[ "${{ env.singbox_core_latest_version }}" == "${{ env.singbox_core_release_version }}" ]]; then
-
-            echo "singbox_core_old_version=${{ env.singbox_core_compatible_version }}" >> $GITHUB_ENV
-            echo "singbox_core_new_version=${{ env.singbox_core_latest_version }}" >> $GITHUB_ENV
-            echo "singbox_ruleset_old_version=${{ env.singbox_rules_compatible_version }}" >> $GITHUB_ENV
-            echo "singbox_ruleset_new_version=${{ env.singbox_rules_latest_version }}" >> $GITHUB_ENV
-            echo "singbox_equal=true" >> $GITHUB_ENV
-
-
-            curl -sS -L \
-              "https://github.com/SagerNet/sing-box/releases/download/v${{ env.singbox_core_compatible_version }}/sing-box-${{ env.singbox_core_compatible_version }}-linux-amd64.tar.gz" \
-              | tar -zx -C ./tools/
-
-            mv -f \
-              "./tools/sing-box-${{ env.singbox_core_compatible_version }}-linux-amd64/sing-box" \
-              ./tools/sing-box
-
-
-            mkdir -p ./sing-box-ruleset-compatible/
-
-            cd ./tools/
-
-            sed -i \
-              's/"version": 1/"version": ${{ env.singbox_ruleset_compatible_version }}/' \
-              ./convert.sh
-
-            chmod +x ./convert.sh
-
+          sed -i \
+            's/"version": 1/"version": ${{ env.singbox_ruleset_compatible_version }}/' \
             ./convert.sh
 
-            mv -f \
-              ./*.json \
-              ./*.srs \
-              ../sing-box-ruleset-compatible/
+          chmod +x ./convert.sh
 
-            rm -rf ./sing-box*
+          ./convert.sh
+
+          mv -f \
+            ./*.json \
+            ./*.srs \
+            ../sing-box-ruleset-compatible/
+
+          rm -rf ./sing-box*
 
 
-            cd ../
+          cd ../
 
-            curl -sS \
-              -o ./tools/sing-box \
-              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
+          curl -sS \
+            -o ./tools/sing-box \
+            -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
 
-            chmod +x ./tools/sing-box
+          chmod +x ./tools/sing-box
 
-            mkdir -p ./sing-box-ruleset/
+          mkdir -p ./sing-box-ruleset/
 
-            cd ./tools/
+          cd ./tools/
 
-            sed -i \
-              's/"version": ${{ env.singbox_ruleset_compatible_version }}/"version": ${{ env.singbox_rules_latest_version }}/' \
-              ./convert.sh
-
-            chmod +x ./convert.sh
-
+          sed -i \
+            's/"version": ${{ env.singbox_ruleset_compatible_version }}/"version": ${{ env.singbox_rules_latest_version }}/' \
             ./convert.sh
 
-            mv -f \
-              ./*.json \
-              ./*.srs \
-              ../sing-box-ruleset/
+          chmod +x ./convert.sh
 
-            rm -rf ./sing-box* ./rules*
+          ./convert.sh
 
-          else
+          mv -f \
+            ./*.json \
+            ./*.srs \
+            ../sing-box-ruleset/
 
-            echo "singbox_core_old_version=${{ env.singbox_core_compatible_version }}" >> $GITHUB_ENV
-            echo "singbox_core_new_version=${{ env.singbox_core_latest_version }}" >> $GITHUB_ENV
-            echo "singbox_ruleset_old_version=${{ env.singbox_rules_compatible_version }}" >> $GITHUB_ENV
-            echo "singbox_ruleset_new_version=${{ env.singbox_rules_latest_version }}" >> $GITHUB_ENV
-            echo "singbox_equal=false" >> $GITHUB_ENV
+          rm -rf ./sing-box* ./rules*
+
+        else
+
+          echo "singbox_core_old_version=${{ env.singbox_core_compatible_version }}" >> $GITHUB_ENV
+          echo "singbox_core_new_version=${{ env.singbox_core_latest_version }}" >> $GITHUB_ENV
+          echo "singbox_ruleset_old_version=${{ env.singbox_rules_compatible_version }}" >> $GITHUB_ENV
+          echo "singbox_ruleset_new_version=${{ env.singbox_rules_latest_version }}" >> $GITHUB_ENV
+          echo "singbox_equal=false" >> $GITHUB_ENV
 
 
-            curl -sS \
-              -o ./tools/sing-box \
-              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
+          curl -sS \
+            -o ./tools/sing-box \
+            -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-stable-linux-amd64-v3.upx
 
-            chmod +x ./tools/sing-box
+          chmod +x ./tools/sing-box
 
-            mkdir -p ./sing-box-ruleset-compatible/
+          mkdir -p ./sing-box-ruleset-compatible/
 
-            cd ./tools/
+          cd ./tools/
 
-            sed -i \
-              's/"version": 1/"version": ${{ env.singbox_ruleset_compatible_version }}/' \
-              ./convert.sh
-
-            chmod +x ./convert.sh
-
+          sed -i \
+            's/"version": 1/"version": ${{ env.singbox_ruleset_compatible_version }}/' \
             ./convert.sh
 
-            mv -f \
-              ./*.json \
-              ./*.srs \
-              ../sing-box-ruleset-compatible/
+          chmod +x ./convert.sh
 
-            rm -rf ./sing-box*
+          ./convert.sh
+
+          mv -f \
+            ./*.json \
+            ./*.srs \
+            ../sing-box-ruleset-compatible/
+
+          rm -rf ./sing-box*
 
 
-            cd ../
+          cd ../
 
-            curl -sS \
-              -o ./tools/sing-box \
-              -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-testing-linux-amd64-v3.upx
+          curl -sS \
+            -o ./tools/sing-box \
+            -L https://github.com/y7478729/proxy-tools/releases/download/sing-box/sing-box-ref1nd-testing-linux-amd64-v3.upx
 
-            chmod +x ./tools/sing-box
+          chmod +x ./tools/sing-box
 
-            mkdir -p ./sing-box-ruleset/
+          mkdir -p ./sing-box-ruleset/
 
-            cd ./tools/
+          cd ./tools/
 
-            sed -i \
-              's/"version": ${{ env.singbox_ruleset_compatible_version }}/"version": ${{ env.singbox_rules_latest_version }}/' \
-              ./convert.sh
-
-            chmod +x ./convert.sh
-
+          sed -i \
+            's/"version": ${{ env.singbox_ruleset_compatible_version }}/"version": ${{ env.singbox_rules_latest_version }}/' \
             ./convert.sh
 
-            mv -f \
-              ./*.json \
-              ./*.srs \
-              ../sing-box-ruleset/
-
-            rm -rf ./sing-box* ./rules*
-
-          fi
-
-
-      # ============================================================
-      # Download Loon rule-set files
-      # ============================================================
-
-      - name: Download `loon` rule-set files
-        run: |
-
-          mkdir -p ./tools/loon/domains/
-          mkdir -p ./tools/loon/ips/
-
-
-          # ----------------------------------------------------------
-          # Loon domain rule source
-          # ----------------------------------------------------------
-
-          loon_domains=(
-            ads
-            trackerslist
-            microsoft-cn
-            apple-cn
-            google-cn
-            games-cn
-            games
-            netflix
-            disney
-            max
-            primevideo
-            appletv
-            youtube
-            tiktok
-            bilibili
-            spotify
-            media
-            ai
-            networktest
-            tld-proxy
-            gfw
-            proxy
-            cn
-            cn-lite
-            private
-            fakeip-filter
-          )
-
-
-          # ----------------------------------------------------------
-          # Loon IP rule source
-          # ----------------------------------------------------------
-
-          loon_ips=(
-            privateip
-            cnip
-            telegramip
-            netflixip
-            mediaip
-          )
-
-
-          # ----------------------------------------------------------
-          # Download domain rules
-          # ----------------------------------------------------------
-
-          for domain in "${loon_domains[@]}"; do
-
-            curl -sSL \
-              "${domains_download_url}/${domain}.list" \
-              > "./tools/loon/domains/${domain}.list"
-
-          done
-
-
-          # ----------------------------------------------------------
-          # Download IP rules
-          # ----------------------------------------------------------
-
-          for ip in "${loon_ips[@]}"; do
-
-            curl -sSL \
-              "${ips_download_url}/${ip}.list" \
-              > "./tools/loon/ips/${ip}.list"
-
-          done
-
-
-      # ============================================================
-      # Generate Loon rule-set (mrs) and move .list files
-      #
-      # 注意：
-      # 这里虽然保持与 Mihomo 流程命名结构一致，
-      # 但实际输出严格使用 Loon 规则格式。
-      #
-      # 不添加 ,Proxy
-      # ============================================================
-
-      - name: Generate `loon` rule-set (mrs) and move .list files
-        run: |
-
-          mkdir -p ./loon_ruleset/
-
-
-          # ----------------------------------------------------------
-          # Domain rules
-          #
-          # 保留原始 Loon 规则类型：
-          #
-          # DOMAIN,
-          # DOMAIN-SUFFIX,
-          # DOMAIN-KEYWORD,
-          # DOMAIN-REGEX,
-          #
-          # 不增加 ,Proxy
-          # ----------------------------------------------------------
-
-          for file in ./tools/loon/domains/*.list; do
-
-            [ -f "$file" ] || continue
-
-            name=$(basename "$file" .list)
-
-            awk '
-              /^[[:space:]]*$/ {
-                next
-              }
-
-              /^DOMAIN,/ {
-                print
-                next
-              }
+          chmod +x ./convert.sh
+
+          ./convert.sh
+
+          mv -f \
+            ./*.json \
+            ./*.srs \
+            ../sing-box-ruleset/
+
+          rm -rf ./sing-box* ./rules*
+
+        fi
+
+    # ============================================================
+    # Download Loon rule-set files
+    # ============================================================
+
+    - name: Download `loon` rule-set files
+      run: |
+        
+        mkdir -p ./tools/loon/domains/
+        mkdir -p ./tools/loon/ips/
+
+
+        # ----------------------------------------------------------
+        # Loon domain rule source
+        # ----------------------------------------------------------
+
+        loon_domains=(
+          ads
+          trackerslist
+          microsoft-cn
+          apple-cn
+          google-cn
+          games-cn
+          games
+          netflix
+          disney
+          max
+          primevideo
+          appletv
+          youtube
+          tiktok
+          bilibili
+          spotify
+          media
+          ai
+          networktest
+          tld-proxy
+          gfw
+          proxy
+          cn
+          cn-lite
+          private
+          fakeip-filter
+        )
+
+
+        # ----------------------------------------------------------
+        # Loon IP rule source
+        # ----------------------------------------------------------
+
+        loon_ips=(
+          privateip
+          cnip
+          telegramip
+          netflixip
+          mediaip
+        )
+
+
+        # ----------------------------------------------------------
+        # Download domain rules
+        # ----------------------------------------------------------
+
+        for domain in "${loon_domains[@]}"; do
+
+          curl -sSL \
+            "${domains_download_url}/${domain}.list" \
+            > "./tools/loon/domains/${domain}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # Download IP rules
+        # ----------------------------------------------------------
+
+        for ip in "${loon_ips[@]}"; do
+
+          curl -sSL \
+            "${ips_download_url}/${ip}.list" \
+            > "./tools/loon/ips/${ip}.list"
+
+        done
+
+    # ============================================================
+    # Generate Loon rule-set (mrs) and move .list files
+    #
+    # 注意：
+    # 这里虽然保持与 Mihomo 流程命名结构一致，
+    # 但实际输出严格使用 Loon 规则格式。
+    #
+    # 不添加 ,Proxy
+    # ============================================================
+
+    - name: Generate `loon` rule-set (mrs) and move .list files
+      run: |
+        
+        mkdir -p ./loon_ruleset/
+
+
+        # ----------------------------------------------------------
+        # Domain rules
+        #
+        # 保留原始 Loon 规则类型：
+        #
+        # DOMAIN,
+        # DOMAIN-SUFFIX,
+        # DOMAIN-KEYWORD,
+        # DOMAIN-REGEX,
+        #
+        # 不增加 ,Proxy
+        # ----------------------------------------------------------
+
+        for file in ./tools/loon/domains/*.list; do
+
+          [ -f "$file" ] || continue
+
+          name=$(basename "$file" .list)
+
+          awk '
+            /^[[:space:]]*$/ {
+              next
+            }
+
+            /^DOMAIN,/ {
+              print
+              next
+            }
+
+            /^DOMAIN-SUFFIX,/ {
+              print
+              next
+            }
+
+            /^DOMAIN-KEYWORD,/ {
+              print
+              next
+            }
+
+            /^DOMAIN-REGEX,/ {
+              print
+              next
+            }
+          ' "$file" \
+            | sed '/^[[:space:]]*$/d' \
+            | sort -u \
+            > "./loon_ruleset/${name}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # IP rules
+        #
+        # 兼容：
+        #
+        # IP-CIDR,
+        # IP-CIDR6,
+        #
+        # 以及原始 CIDR 数据。
+        #
+        # 不添加 ,Proxy
+        # ----------------------------------------------------------
+
+        for file in ./tools/loon/ips/*.list; do
+
+          [ -f "$file" ] || continue
+
+          name=$(basename "$file" .list)
+
+          awk '
+            /^[[:space:]]*$/ {
+              next
+            }
+
+            /^IP-CIDR,/ {
+              print
+              next
+            }
 
-              /^DOMAIN-SUFFIX,/ {
-                print
-                next
-              }
+            /^IP-CIDR6,/ {
+              print
+              next
+            }
 
-              /^DOMAIN-KEYWORD,/ {
-                print
-                next
-              }
+            /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]+$/ {
+              print "IP-CIDR," $0
+              next
+            }
+
+            /^[0-9A-Fa-f:]+\/[0-9]+$/ {
+              print "IP-CIDR6," $0
+              next
+            }
+          ' "$file" \
+            | sort -u \
+            > "./loon_ruleset/${name}.list"
+
+        done
+
+
+        # ----------------------------------------------------------
+        # 删除空文件
+        # ----------------------------------------------------------
+
+        find ./loon_ruleset \
+          -type f \
+          -empty \
+          -delete
+
+
+        # ----------------------------------------------------------
+        # 最终去重
+        # ----------------------------------------------------------
 
-              /^DOMAIN-REGEX,/ {
-                print
-                next
-              }
-            ' "$file" \
-              | sed '/^[[:space:]]*$/d' \
-              | sort -u \
-              > "./loon_ruleset/${name}.list"
-
-          done
-
+        for file in ./loon_ruleset/*.list; do
 
-          # ----------------------------------------------------------
-          # IP rules
-          #
-          # 兼容：
-          #
-          # IP-CIDR,
-          # IP-CIDR6,
-          #
-          # 以及原始 CIDR 数据。
-          #
-          # 不添加 ,Proxy
-          # ----------------------------------------------------------
+          [ -f "$file" ] || continue
 
-          for file in ./tools/loon/ips/*.list; do
+          sort -u \
+            "$file" \
+            -o "$file"
 
-            [ -f "$file" ] || continue
+        done
 
-            name=$(basename "$file" .list)
 
-            awk '
-              /^[[:space:]]*$/ {
-                next
-              }
+        # ----------------------------------------------------------
+        # 清理 Loon 临时目录
+        # ----------------------------------------------------------
 
-              /^IP-CIDR,/ {
-                print
-                next
-              }
+        rm -rf ./tools/loon/
 
-              /^IP-CIDR6,/ {
-                print
-                next
-              }
+    # ============================================================
+    # Release mihomo-geodata
+    # ============================================================
+
+    - name: Release and upload `mihomo-geodata` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: mihomo-geodata
+        tag: mihomo-geodata
+        overwrite: true
+        body: |
+          [mihomo 内核](https://github.com/MetaCubeX/mihomo) geodata 文件
+          geodata 文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./mihomo-geodata/*
+
+    # ============================================================
+    # Commit mihomo-geodata
+    # ============================================================
+
+    - name: Commit and push `mihomo-geodata` branch
+      run: |
+        cd ./mihomo-geodata/ || exit 1
 
-              /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]+$/ {
-                print "IP-CIDR," $0
-                next
-              }
+        git init
 
-              /^[0-9A-Fa-f:]+\/[0-9]+$/ {
-                print "IP-CIDR6," $0
-                next
-              }
-            ' "$file" \
-              | sort -u \
-              > "./loon_ruleset/${name}.list"
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
 
-          done
+        git config --local \
+          user.name "github-actions[bot]"
 
+        git checkout -b mihomo-geodata
 
-          # ----------------------------------------------------------
-          # 删除空文件
-          # ----------------------------------------------------------
+        git add .
 
-          find ./loon_ruleset \
-            -type f \
-            -empty \
-            -delete
+        git commit \
+          -m "mihomo 内核 geodata 文件更新于 ${update_version}"
 
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
 
-          # ----------------------------------------------------------
-          # 最终去重
-          # ----------------------------------------------------------
+        git push -f origin mihomo-geodata
 
-          for file in ./loon_ruleset/*.list; do
+    # ============================================================
+    # Release mihomo-ruleset
+    # ============================================================
 
-            [ -f "$file" ] || continue
+    - name: Release and upload `mihomo-ruleset` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: mihomo-ruleset
+        tag: mihomo-ruleset
+        overwrite: true
+        body: |
+          [mihomo 内核](https://github.com/MetaCubeX/mihomo) rule-set 规则集文件
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./mihomo-ruleset/*
+
+    # ============================================================
+    # Commit mihomo-ruleset
+    # ============================================================
+
+    - name: Commit and push `mihomo-ruleset` branch
+      run: |
+        cd ./mihomo-ruleset/ || exit 1
+
+        git init
+
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
+
+        git config --local \
+          user.name "github-actions[bot]"
+
+        git checkout -b mihomo-ruleset
+
+        git add .
+
+        git commit \
+          -m "mihomo 内核 rule-set 规则集文件更新于 ${update_version}"
+
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+
+        git push -f origin mihomo-ruleset
+
+    # ============================================================
+    # Release sing-box-ruleset-compatible
+    # ============================================================
+
+    - name: Release and upload `sing-box-ruleset-compatible` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: sing-box-ruleset-compatible
+        tag: sing-box-ruleset-compatible
+        overwrite: true
+        body: |
+          [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
+          适用于 v${{ env.singbox_core_old_version }}-v${{ env.singbox_core_new_version }}（不包含）系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_old_version }}`）
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./sing-box-ruleset-compatible/*
+
+    # ============================================================
+    # Commit sing-box-ruleset-compatible
+    # ============================================================
+
+    - name: Commit and push `sing-box-ruleset-compatible` branch
+      run: |
+        cd ./sing-box-ruleset-compatible/ || exit 1
+
+        git init
+
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
+
+        git config --local \
+          user.name "github-actions[bot]"
+
+        git checkout -b sing-box-ruleset-compatible
+
+        git add .
+
+        git commit \
+          -m "sing-box 内核 rule_set 规则集文件更新于 ${update_version}"
+
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+
+        git push -f origin sing-box-ruleset-compatible
+
+    # ============================================================
+    # Release sing-box-ruleset
+    # ============================================================
+
+    - name: Release and upload `sing-box-ruleset` assets (singbox_equal == true)
+      if: ${{ env.singbox_equal == 'true' }}
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: sing-box-ruleset
+        tag: sing-box-ruleset
+        overwrite: true
+        body: |
+          [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
+          适用于 v${{ env.singbox_core_new_version }}（包含）+ 系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_new_version }}`）
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./sing-box-ruleset/*
+
+    - name: Release and upload `sing-box-ruleset` assets (singbox_equal == false)
+      if: ${{ env.singbox_equal == 'false' }}
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: sing-box-ruleset
+        tag: sing-box-ruleset
+        overwrite: true
+        body: |
+          [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
+          适用于 v${{ env.singbox_core_new_version }} 系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_new_version }}`）
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./sing-box-ruleset/*
 
-            sort -u \
-              "$file" \
-              -o "$file"
+    # ============================================================
+    # Commit sing-box-ruleset
+    # ============================================================
 
-          done
+    - name: Commit and push `sing-box-ruleset` branch
+      run: |
+        cd ./sing-box-ruleset/ || exit 1
 
+        git init
 
-          # ----------------------------------------------------------
-          # 清理 Loon 临时目录
-          # ----------------------------------------------------------
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
 
-          rm -rf ./tools/loon/
+        git config --local \
+          user.name "github-actions[bot]"
 
+        git checkout -b sing-box-ruleset
 
-      # ============================================================
-      # Release mihomo-geodata
-      # ============================================================
+        git add .
 
-      - name: Release and upload `mihomo-geodata` assets
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: mihomo-geodata
-          tag: mihomo-geodata
-          overwrite: true
-          body: |
-            [mihomo 内核](https://github.com/MetaCubeX/mihomo) geodata 文件
-            geodata 文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./mihomo-geodata/*
+        git commit \
+          -m "sing-box 内核 rule_set 规则集文件更新于 ${update_version}"
 
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
 
-      # ============================================================
-      # Commit mihomo-geodata
-      # ============================================================
+        git push -f origin sing-box-ruleset
 
-      - name: Commit and push `mihomo-geodata` branch
-        run: |
-          cd ./mihomo-geodata/ || exit 1
+    # ============================================================
+    # Release loon_ruleset
+    # ============================================================
 
-          git init
+    - name: Release and upload `loon_ruleset` assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: loon_ruleset
+        tag: loon_ruleset
+        overwrite: true
+        body: |
+          Loon 规则集文件
+          规则集文件更新于 ${{ env.update_version }}
+        file_glob: true
+        file: ./loon_ruleset/*
 
-          git config --local \
-            user.email "github-actions[bot]@users.noreply.github.com"
+    # ============================================================
+    # Commit loon_ruleset
+    # ============================================================
 
-          git config --local \
-            user.name "github-actions[bot]"
+    - name: Commit and push `loon_ruleset` branch
+      run: |
+        cd ./loon_ruleset/ || exit 1
 
-          git checkout -b mihomo-geodata
+        git init
 
-          git add .
+        git config --local \
+          user.email "github-actions[bot]@users.noreply.github.com"
 
-          git commit \
-            -m "mihomo 内核 geodata 文件更新于 ${update_version}"
+        git config --local \
+          user.name "github-actions[bot]"
 
-          git remote add origin \
-            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        git checkout -b loon_ruleset
 
-          git push -f origin mihomo-geodata
+        git add .
 
+        git commit \
+          -m "Loon 规则集文件更新于 ${update_version}"
 
-      # ============================================================
-      # Release mihomo-ruleset
-      # ============================================================
+        git remote add origin \
+          "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
 
-      - name: Release and upload `mihomo-ruleset` assets
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: mihomo-ruleset
-          tag: mihomo-ruleset
-          overwrite: true
-          body: |
-            [mihomo 内核](https://github.com/MetaCubeX/mihomo) rule-set 规则集文件
-            规则集文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./mihomo-ruleset/*
+        git push -f origin loon_ruleset
 
+    # ============================================================
+    # Purge jsDelivr CDN
+    # ============================================================
 
-      # ============================================================
-      # Commit mihomo-ruleset
-      # ============================================================
+    - name: Purge jsDelivr CDN
+      run: |
+        
+        # ----------------------------------------------------------
+        # mihomo-geodata
+        # ----------------------------------------------------------
 
-      - name: Commit and push `mihomo-ruleset` branch
-        run: |
-          cd ./mihomo-ruleset/ || exit 1
+        cd ./mihomo-geodata/ || exit 1
 
-          git init
+        for file in *; do
+          [ -f "$file" ] || continue
 
-          git config --local \
-            user.email "github-actions[bot]@users.noreply.github.com"
+          curl -i \
+            "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-geodata/${file}"
+        done
 
-          git config --local \
-            user.name "github-actions[bot]"
 
-          git checkout -b mihomo-ruleset
+        # ----------------------------------------------------------
+        # mihomo-ruleset
+        # ----------------------------------------------------------
 
-          git add .
+        cd ../mihomo-ruleset/ || exit 1
 
-          git commit \
-            -m "mihomo 内核 rule-set 规则集文件更新于 ${update_version}"
+        for file in *; do
+          [ -f "$file" ] || continue
 
-          git remote add origin \
-            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          curl -i \
+            "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-ruleset/${file}"
+        done
 
-          git push -f origin mihomo-ruleset
 
+        # ----------------------------------------------------------
+        # sing-box-ruleset-compatible
+        # ----------------------------------------------------------
 
-      # ============================================================
-      # Release sing-box-ruleset-compatible
-      # ============================================================
+        cd ../sing-box-ruleset-compatible/ || exit 1
 
-      - name: Release and upload `sing-box-ruleset-compatible` assets
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: sing-box-ruleset-compatible
-          tag: sing-box-ruleset-compatible
-          overwrite: true
-          body: |
-            [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
-            适用于 v${{ env.singbox_core_old_version }}-v${{ env.singbox_core_new_version }}（不包含）系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_old_version }}`）
-            规则集文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./sing-box-ruleset-compatible/*
+        for file in *; do
+          [ -f "$file" ] || continue
 
+          curl -i \
+            "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset-compatible/${file}"
+        done
 
-      # ============================================================
-      # Commit sing-box-ruleset-compatible
-      # ============================================================
 
-      - name: Commit and push `sing-box-ruleset-compatible` branch
-        run: |
-          cd ./sing-box-ruleset-compatible/ || exit 1
+        # ----------------------------------------------------------
+        # sing-box-ruleset
+        # ----------------------------------------------------------
 
-          git init
+        cd ../sing-box-ruleset/ || exit 1
 
-          git config --local \
-            user.email "github-actions[bot]@users.noreply.github.com"
+        for file in *; do
+          [ -f "$file" ] || continue
 
-          git config --local \
-            user.name "github-actions[bot]"
+          curl -i \
+            "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset/${file}"
+        done
 
-          git checkout -b sing-box-ruleset-compatible
 
-          git add .
+        # ----------------------------------------------------------
+        # loon_ruleset
+        # ----------------------------------------------------------
 
-          git commit \
-            -m "sing-box 内核 rule_set 规则集文件更新于 ${update_version}"
+        cd ../loon_ruleset/ || exit 1
 
-          git remote add origin \
-            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        for file in *; do
+          [ -f "$file" ] || continue
 
-          git push -f origin sing-box-ruleset-compatible
+          curl -i \
+            "https://purge.jsdelivr.net/gh/${{ github.repository }}@loon_ruleset/${file}"
+        done
 
+    # ============================================================
+    # Delete old workflow runs
+    # ============================================================
 
-      # ============================================================
-      # Release sing-box-ruleset
-      # ============================================================
-
-      - name: Release and upload `sing-box-ruleset` assets (singbox_equal == true)
-        if: ${{ env.singbox_equal == 'true' }}
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: sing-box-ruleset
-          tag: sing-box-ruleset
-          overwrite: true
-          body: |
-            [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
-            适用于 v${{ env.singbox_core_new_version }}（包含）+ 系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_new_version }}`）
-            规则集文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./sing-box-ruleset/*
-
-
-      - name: Release and upload `sing-box-ruleset` assets (singbox_equal == false)
-        if: ${{ env.singbox_equal == 'false' }}
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: sing-box-ruleset
-          tag: sing-box-ruleset
-          overwrite: true
-          body: |
-            [sing-box 内核](https://github.com/SagerNet/sing-box) rule_set 规则集文件
-            适用于 v${{ env.singbox_core_new_version }} 系列版本的 sing-box 内核（`"version": ${{ env.singbox_ruleset_new_version }}`）
-            规则集文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./sing-box-ruleset/*
-
-
-      # ============================================================
-      # Commit sing-box-ruleset
-      # ============================================================
-
-      - name: Commit and push `sing-box-ruleset` branch
-        run: |
-          cd ./sing-box-ruleset/ || exit 1
-
-          git init
-
-          git config --local \
-            user.email "github-actions[bot]@users.noreply.github.com"
-
-          git config --local \
-            user.name "github-actions[bot]"
-
-          git checkout -b sing-box-ruleset
-
-          git add .
-
-          git commit \
-            -m "sing-box 内核 rule_set 规则集文件更新于 ${update_version}"
-
-          git remote add origin \
-            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-
-          git push -f origin sing-box-ruleset
-
-
-      # ============================================================
-      # Release loon_ruleset
-      # ============================================================
-
-      - name: Release and upload `loon_ruleset` assets
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          release_name: loon_ruleset
-          tag: loon_ruleset
-          overwrite: true
-          body: |
-            Loon 规则集文件
-            规则集文件更新于 ${{ env.update_version }}
-          file_glob: true
-          file: ./loon_ruleset/*
-
-
-      # ============================================================
-      # Commit loon_ruleset
-      # ============================================================
-
-      - name: Commit and push `loon_ruleset` branch
-        run: |
-          cd ./loon_ruleset/ || exit 1
-
-          git init
-
-          git config --local \
-            user.email "github-actions[bot]@users.noreply.github.com"
-
-          git config --local \
-            user.name "github-actions[bot]"
-
-          git checkout -b loon_ruleset
-
-          git add .
-
-          git commit \
-            -m "Loon 规则集文件更新于 ${update_version}"
-
-          git remote add origin \
-            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-
-          git push -f origin loon_ruleset
-
-
-      # ============================================================
-      # Purge jsDelivr CDN
-      # ============================================================
-
-      - name: Purge jsDelivr CDN
-        run: |
-
-          # ----------------------------------------------------------
-          # mihomo-geodata
-          # ----------------------------------------------------------
-
-          cd ./mihomo-geodata/ || exit 1
-
-          for file in *; do
-            [ -f "$file" ] || continue
-
-            curl -i \
-              "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-geodata/${file}"
-          done
-
-
-          # ----------------------------------------------------------
-          # mihomo-ruleset
-          # ----------------------------------------------------------
-
-          cd ../mihomo-ruleset/ || exit 1
-
-          for file in *; do
-            [ -f "$file" ] || continue
-
-            curl -i \
-              "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-ruleset/${file}"
-          done
-
-
-          # ----------------------------------------------------------
-          # sing-box-ruleset-compatible
-          # ----------------------------------------------------------
-
-          cd ../sing-box-ruleset-compatible/ || exit 1
-
-          for file in *; do
-            [ -f "$file" ] || continue
-
-            curl -i \
-              "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset-compatible/${file}"
-          done
-
-
-          # ----------------------------------------------------------
-          # sing-box-ruleset
-          # ----------------------------------------------------------
-
-          cd ../sing-box-ruleset/ || exit 1
-
-          for file in *; do
-            [ -f "$file" ] || continue
-
-            curl -i \
-              "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-ruleset/${file}"
-          done
-
-
-          # ----------------------------------------------------------
-          # loon_ruleset
-          # ----------------------------------------------------------
-
-          cd ../loon_ruleset/ || exit 1
-
-          for file in *; do
-            [ -f "$file" ] || continue
-
-            curl -i \
-              "https://purge.jsdelivr.net/gh/${{ github.repository }}@loon_ruleset/${file}"
-          done
-
-
-      # ============================================================
-      # Delete old workflow runs
-      # ============================================================
-
-      - name: Delete old workflow runs
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          retain_days: 3
-          keep_minimum_runs: 1
+    - name: Delete old workflow runs
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        retain_days: 3
+        keep_minimum_runs: 1
