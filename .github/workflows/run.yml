@@ -219,9 +219,7 @@ jobs:
         list=($(ls ./domains/))
 
         for ((i = 0; i < ${#list[@]}; i++)); do
-
-          cat "./domains/${list[i]}/${list[i]}.list" \
-          >> "../loon-ruleset/${list[i]}.list"
+          cp -f "./domains/${list[i]}/${list[i]}.list" "../loon-ruleset/${list[i]}.list"
 
         done
 
@@ -233,19 +231,8 @@ jobs:
         list=($(ls ./ips/))
 
         for ((i = 0; i < ${#list[@]}; i++)); do
-
-          cat "./ips/${list[i]}/${list[i]}.list" \
-          >> "../loon-ruleset/${list[i]}.list"
-
+          cp -f "./ips/${list[i]}/${list[i]}.list" "../loon-ruleset/${list[i]}.list"
         done
-
-
-        # ==========================
-        # Clean
-        # ==========================
-
-        rm -rf ./domains/
-        rm -rf ./ips/
 
     - name: Generate `mihomo` rule-set (mrs) and move .list files
       run: |
