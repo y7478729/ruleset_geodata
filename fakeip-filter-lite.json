@@ -1,0 +1,35 @@
+{
+  "version": 5,
+  "rules": [
+    {
+      "domain": [
+        "adguardteam.github.io",
+        "adrules.top",
+        "anti-ad.net",
+        "local.adguard.org",
+        "numb.viagenie.ca",
+        "relay.webwormhole.io",
+        "s1.taraba.net",
+        "s1.voipstation.jp",
+        "s2.taraba.net",
+        "s2.voipstation.jp",
+        "static.adtidy.org",
+        "staticauth.openrelay.metered.ca",
+        "ut1-wwv.nist.gov",
+        "utcnist.colorado.edu",
+        "utcnist2.colorado.edu",
+        "utcnist3.colorado.edu"
+      ],
+      "domain_keyword": [
+        "ntp",
+        "stun",
+        "time"
+      ],
+      "domain_suffix": [
+        "ats1.e-timing.ne.jp",
+        "clock.isc.org",
+        "metered.live"
+      ]
+    }
+  ]
+}
